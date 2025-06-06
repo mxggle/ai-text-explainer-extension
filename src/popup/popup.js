@@ -1,6 +1,8 @@
 // Popup JavaScript for AI Text Explainer
 class PopupManager {
     constructor() {
+        this.currentText = null;
+        this.isLoading = false;
         this.init();
     }
 
@@ -8,6 +10,8 @@ class PopupManager {
         await this.loadSettings();
         this.setupEventListeners();
         this.updateStatus();
+        this.checkForRecentExplanation();
+        this.setState('empty'); // Start with empty state
     }
 
     async loadSettings() {
@@ -15,45 +19,31 @@ class PopupManager {
             const response = await chrome.runtime.sendMessage({ action: 'get-settings' });
             if (response && response.success) {
                 this.settings = response.settings;
-                this.updateDisplay();
             } else {
-                this.showError('Failed to load settings');
+                console.warn('Failed to load settings, using defaults');
+                this.settings = { provider: 'openai', model: 'gpt-3.5-turbo' };
             }
         } catch (error) {
             console.error('Error loading settings:', error);
-            this.showError('Error loading settings');
+            this.settings = { provider: 'openai', model: 'gpt-3.5-turbo' };
         }
     }
 
-    updateDisplay() {
-        // Update provider display
-        const providerElement = document.getElementById('current-provider');
-        if (providerElement) {
-            const providerName = this.getProviderDisplayName(this.settings.provider);
-            providerElement.textContent = providerName;
-            providerElement.className = 'status-value';
+    async checkForRecentExplanation() {
+        try {
+            // Check if there's recent text that was explained
+            const response = await chrome.runtime.sendMessage({ action: 'get-recent-explanation' });
+            if (response && response.success && response.data) {
+                this.displayExplanation(response.data.text, response.data.explanation);
+            }
+        } catch (error) {
+            console.error('Error checking recent explanation:', error);
         }
-
-        // Update model display
-        const modelElement = document.getElementById('current-model');
-        if (modelElement) {
-            modelElement.textContent = this.settings.model || 'Not set';
-            modelElement.className = 'status-value';
-        }
-    }
-
-    getProviderDisplayName(provider) {
-        const providers = {
-            'openai': 'OpenAI',
-            'anthropic': 'Anthropic Claude',
-            'gemini': 'Google Gemini'
-        };
-        return providers[provider] || 'Unknown';
     }
 
     setupEventListeners() {
         // Settings button
-        const settingsBtn = document.getElementById('open-settings');
+        const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => {
                 chrome.tabs.create({
@@ -63,91 +53,378 @@ class PopupManager {
             });
         }
 
-        // Test API button
-        const testApiBtn = document.getElementById('test-api');
-        if (testApiBtn) {
-            testApiBtn.addEventListener('click', () => this.testApiConnection());
+        // Pronunciation play button
+        const playBtn = document.getElementById('play-pronunciation');
+        if (playBtn) {
+            playBtn.addEventListener('click', () => this.playPronunciation());
         }
 
-        // Footer links
-        const privacyLink = document.getElementById('privacy-link');
-        if (privacyLink) {
-            privacyLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showPrivacyInfo();
-            });
+        // Favorite button
+        const favoriteBtn = document.getElementById('favorite-btn');
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', () => this.toggleFavorite());
         }
 
-        const helpLink = document.getElementById('help-link');
-        if (helpLink) {
-            helpLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showHelp();
-            });
+        // Heart button
+        const heartBtn = document.getElementById('heart-btn');
+        if (heartBtn) {
+            heartBtn.addEventListener('click', () => this.toggleHeart());
         }
 
-        const feedbackLink = document.getElementById('feedback-link');
-        if (feedbackLink) {
-            feedbackLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showFeedback();
-            });
+        // Expand button
+        const expandBtn = document.getElementById('expand-btn');
+        if (expandBtn) {
+            expandBtn.addEventListener('click', () => this.expandView());
+        }
+
+        // New window button
+        const newWindowBtn = document.getElementById('new-window-btn');
+        if (newWindowBtn) {
+            newWindowBtn.addEventListener('click', () => this.openInNewWindow());
+        }
+
+        // Listen for messages from content script
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'text-selected') {
+                this.handleTextSelection(message.text);
+            } else if (message.action === 'explanation-ready') {
+                this.displayExplanation(message.text, message.explanation);
+            }
+        });
+    }
+
+    setState(state) {
+        const container = document.querySelector('.popup-container');
+        container.className = `popup-container ${state}`;
+
+        // Update bottom padding based on state
+        if (state === 'empty') {
+            container.style.paddingBottom = '60px'; // Space for bottom actions
+        } else {
+            container.style.paddingBottom = '60px';
         }
     }
 
-    async testApiConnection() {
-        const testBtn = document.getElementById('test-api');
-        const originalText = testBtn.textContent;
+    async handleTextSelection(text) {
+        if (!text || text.trim().length === 0) {
+            this.setState('empty');
+            return;
+        }
 
-        // Update button state
-        testBtn.textContent = '🔄 Testing...';
-        testBtn.disabled = true;
+        this.currentText = text.trim();
+        this.setState('loading');
+        this.isLoading = true;
 
         try {
-            const apiKey = this.settings.apiKeys && this.settings.apiKeys[this.settings.provider];
-
+            // Send request for explanation
             const response = await chrome.runtime.sendMessage({
-                action: 'test-api-key',
+                action: 'explain-text',
+                text: this.currentText,
                 provider: this.settings.provider,
-                apiKey: apiKey,
                 model: this.settings.model
             });
 
-            if (response && response.success && response.isValid) {
-                this.showSuccess('✅ API connection successful!');
-                testBtn.textContent = '✅ Success';
-                setTimeout(() => {
-                    testBtn.textContent = originalText;
-                    testBtn.disabled = false;
-                }, 2000);
+            if (response && response.success) {
+                this.displayExplanation(this.currentText, response.explanation);
             } else {
-                this.showError('❌ API test failed. Check your settings.');
-                testBtn.textContent = '❌ Failed';
-                setTimeout(() => {
-                    testBtn.textContent = originalText;
-                    testBtn.disabled = false;
-                }, 2000);
+                this.showError('Failed to get explanation. Please check your settings.');
+                this.setState('empty');
             }
         } catch (error) {
-            console.error('API test error:', error);
-            this.showError('Error testing API connection');
-            testBtn.textContent = originalText;
-            testBtn.disabled = false;
+            console.error('Error getting explanation:', error);
+            this.showError('Error getting explanation. Please try again.');
+            this.setState('empty');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    displayExplanation(text, explanation) {
+        // Update word title
+        const wordTitle = document.getElementById('word-title');
+        if (wordTitle) {
+            wordTitle.textContent = text;
+        }
+
+        // Update pronunciation and language indicator
+        const pronunciationEl = document.getElementById('pronunciation');
+        const pronunciationLabel = document.querySelector('.pronunciation-label');
+        if (pronunciationEl && pronunciationLabel) {
+            const detectedLang = this.detectLanguage(text);
+            const langCode = detectedLang.split('-')[0].toUpperCase();
+
+            // Update language label
+            pronunciationLabel.textContent = langCode;
+
+            // Generate pronunciation
+            pronunciationEl.textContent = this.generatePronunciation(text);
+        }
+
+        // Update definitions
+        this.updateDefinitions(explanation);
+
+        this.setState('has-content');
+    }
+
+    generatePronunciation(text) {
+        const detectedLang = this.detectLanguage(text);
+        const langCode = detectedLang.split('-')[0];
+
+        // Different pronunciation formatting based on language
+        switch (langCode) {
+            case 'ja':
+                // For Japanese, show romanization hint
+                return `/${text}/`;
+            case 'zh':
+                // For Chinese, show pinyin placeholder
+                return `/pínyīn/`;
+            case 'ko':
+                // For Korean, show hangul
+                return `/${text}/`;
+            case 'ar':
+                // For Arabic
+                return `/${text}/`;
+            case 'ru':
+                // For Russian
+                return `/${text}/`;
+            case 'th':
+                // For Thai
+                return `/${text}/`;
+            case 'hi':
+                // For Hindi
+                return `/${text}/`;
+            default:
+                // For Latin scripts, create IPA-like format
+                const word = text.toLowerCase().replace(/[^a-z]/g, '');
+                if (word.length === 0) {
+                    return `/${text}/`;
+                }
+                if (word.length <= 4) {
+                    return `/${word}/`;
+                }
+                return `/ˈ${word.substring(0, Math.ceil(word.length/2))}${word.substring(Math.ceil(word.length/2))}/`;
+        }
+    }
+
+    updateDefinitions(explanation) {
+        const definitionsSection = document.getElementById('definitions-section');
+        if (!definitionsSection) return;
+
+        // Clear existing definitions
+        definitionsSection.innerHTML = '';
+
+        // Parse explanation into different types/categories
+        const definitions = this.parseExplanation(explanation);
+
+        definitions.forEach(def => {
+            const defEntry = document.createElement('div');
+            defEntry.className = 'definition-entry';
+
+            const defType = document.createElement('span');
+            defType.className = 'definition-type';
+            defType.textContent = def.type;
+
+            const defText = document.createElement('span');
+            defText.className = 'definition-text';
+            defText.textContent = def.text;
+
+            defEntry.appendChild(defType);
+            defEntry.appendChild(defText);
+            definitionsSection.appendChild(defEntry);
+        });
+    }
+
+    parseExplanation(explanation) {
+        // Try to parse the explanation into different categories
+        // This is a simple parser - you might want to make it more sophisticated
+        const definitions = [];
+
+        if (explanation.includes('\n')) {
+            const lines = explanation.split('\n').filter(line => line.trim());
+            lines.forEach((line, index) => {
+                if (line.trim()) {
+                    definitions.push({
+                        type: index === 0 ? 'def.' : `${index + 1}.`,
+                        text: line.trim()
+                    });
+                }
+            });
+        } else {
+            // Single explanation
+            definitions.push({
+                type: 'def.',
+                text: explanation
+            });
+        }
+
+        return definitions;
+    }
+
+    playPronunciation() {
+        // Use Web Speech API to pronounce the word
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(this.currentText);
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+
+            // Detect language and set appropriate voice
+            const detectedLanguage = this.detectLanguage(this.currentText);
+            utterance.lang = detectedLanguage;
+
+            // Function to set voice and speak
+            const speakWithVoice = () => {
+                const voices = speechSynthesis.getVoices();
+
+                if (voices.length > 0) {
+                    // Try to find a voice for the detected language
+                    const appropriateVoice = voices.find(voice =>
+                        voice.lang.startsWith(detectedLanguage.split('-')[0])
+                    );
+
+                    if (appropriateVoice) {
+                        utterance.voice = appropriateVoice;
+                        console.log(`Using voice: ${appropriateVoice.name} (${appropriateVoice.lang}) for detected language: ${detectedLanguage}`);
+                    } else {
+                        console.log(`No voice found for ${detectedLanguage}, using default`);
+                    }
+                }
+
+                speechSynthesis.speak(utterance);
+            };
+
+            // Check if voices are loaded, if not wait for them
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.addEventListener('voiceschanged', speakWithVoice, { once: true });
+            } else {
+                speakWithVoice();
+            }
+        } else {
+            this.showMessage('Speech synthesis not supported in this browser', 'info');
+        }
+    }
+
+    detectLanguage(text) {
+        // Simple language detection based on character ranges
+        const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(text);
+        const hasChinese = /[\u4e00-\u9fff]/.test(text);
+        const hasKorean = /[\uac00-\ud7af]/.test(text);
+        const hasArabic = /[\u0600-\u06ff]/.test(text);
+        const hasRussian = /[\u0400-\u04ff]/.test(text);
+        const hasGreek = /[\u0370-\u03ff]/.test(text);
+        const hasThai = /[\u0e00-\u0e7f]/.test(text);
+        const hasHindi = /[\u0900-\u097f]/.test(text);
+
+        // Priority order for mixed scripts
+        if (hasJapanese) {
+            return 'ja-JP';
+        } else if (hasChinese && !hasJapanese) {
+            // Distinguish between Traditional and Simplified Chinese
+            const hasTraditional = /[\u4e00-\u9fff]/.test(text);
+            return 'zh-CN'; // Default to Simplified, could be enhanced
+        } else if (hasKorean) {
+            return 'ko-KR';
+        } else if (hasArabic) {
+            return 'ar-SA';
+        } else if (hasRussian) {
+            return 'ru-RU';
+        } else if (hasGreek) {
+            return 'el-GR';
+        } else if (hasThai) {
+            return 'th-TH';
+        } else if (hasHindi) {
+            return 'hi-IN';
+        } else {
+            // For Latin scripts, try to detect specific languages
+            return this.detectLatinLanguage(text);
+        }
+    }
+
+    detectLatinLanguage(text) {
+        const lowerText = text.toLowerCase();
+
+        // Common words/patterns for different languages
+        const languagePatterns = {
+            'es-ES': /\b(el|la|los|las|un|una|de|en|y|a|que|es|se|no|te|lo|le|da|su|por|son|con|para|al|una|sobre|todo|pero|más|me|muy|yo|ahora|como|donde|cuando)\b/g,
+            'fr-FR': /\b(le|la|les|un|une|de|du|des|et|à|ce|il|être|et|en|avoir|que|pour|dans|ce|son|une|sur|avec|ne|se|pas|tout|mais|plus|dire|me|on|mon|lui|nous|comme|où|quand)\b/g,
+            'de-DE': /\b(der|die|das|und|in|den|von|zu|mit|sich|auf|für|als|bei|nach|über|aus|an|werden|hat|er|es|sie|nicht|werden|haben|sein|werden|können|müssen|sollen|wollen|dürfen|mögen)\b/g,
+            'it-IT': /\b(il|lo|la|i|gli|le|un|uno|una|di|a|da|in|con|su|per|tra|fra|e|che|non|si|è|sono|ha|hanno|essere|avere|fare|dire|andare|stare|vedere|sapere|dare|volere|dovere|potere|come|dove|quando)\b/g,
+            'pt-PT': /\b(o|a|os|as|um|uma|de|em|para|com|por|se|que|não|é|são|tem|ter|ser|estar|fazer|ir|ver|dar|vir|dizer|poder|querer|dever|saber|como|onde|quando)\b/g,
+            'nl-NL': /\b(de|het|een|van|in|op|met|voor|door|naar|uit|aan|bij|over|onder|tegen|zonder|binnen|buiten|tussen|achter|naast|boven|beneden|links|rechts|zoals|waar|wanneer)\b/g,
+        };
+
+        let maxMatches = 0;
+        let detectedLang = 'en-US'; // default
+
+        for (const [lang, pattern] of Object.entries(languagePatterns)) {
+            const matches = (lowerText.match(pattern) || []).length;
+            if (matches > maxMatches) {
+                maxMatches = matches;
+                detectedLang = lang;
+            }
+        }
+
+        // If no pattern matches well, check for special characters
+        if (maxMatches < 2) {
+            if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(lowerText)) {
+                if (/[àáâãç]/.test(lowerText)) return 'pt-PT';
+                if (/[àâéèêëôùûüÿç]/.test(lowerText)) return 'fr-FR';
+                if (/[äöüß]/.test(lowerText)) return 'de-DE';
+                if (/[àèéìíîòóù]/.test(lowerText)) return 'it-IT';
+                if (/[áéíñóú]/.test(lowerText)) return 'es-ES';
+            }
+        }
+
+        return detectedLang;
+    }
+
+    toggleFavorite() {
+        const btn = document.getElementById('favorite-btn');
+        btn.classList.toggle('active');
+        // In a real app, you'd save this to storage
+        this.showMessage('Added to favorites', 'success');
+    }
+
+    toggleHeart() {
+        const btn = document.getElementById('heart-btn');
+        btn.classList.toggle('active');
+        // In a real app, you'd save this to storage
+        this.showMessage('Liked!', 'success');
+    }
+
+    expandView() {
+        // Toggle between compact and expanded view
+        const container = document.querySelector('.popup-container');
+        if (container.style.height === '600px') {
+            container.style.height = '400px';
+        } else {
+            container.style.height = '600px';
+        }
+    }
+
+    openInNewWindow() {
+        if (this.currentText) {
+            chrome.tabs.create({
+                url: `https://www.google.com/search?q=define+${encodeURIComponent(this.currentText)}`
+            });
         }
     }
 
     updateStatus() {
-        const statusElement = document.getElementById('extension-status');
-        if (statusElement) {
+        const statusDot = document.getElementById('status-dot');
+        const statusCount = document.getElementById('status-count');
+
+        if (statusDot && statusCount) {
             // Check if API key is configured
             const hasApiKey = this.settings && this.settings.apiKeys && this.settings.apiKeys[this.settings.provider];
 
             if (hasApiKey) {
-                statusElement.textContent = 'Ready';
-                statusElement.className = 'status-value success';
+                statusDot.style.background = '#4ade80'; // Green
+                statusCount.textContent = '✓';
+                statusCount.style.background = '#4ade80';
             } else {
-                statusElement.textContent = 'Setup Required';
-                statusElement.className = 'status-value error';
+                statusDot.style.background = '#f87171'; // Red
+                statusCount.textContent = '!';
+                statusCount.style.background = '#f87171';
             }
         }
     }
@@ -161,73 +438,54 @@ class PopupManager {
     }
 
     showMessage(message, type) {
-        // Create or update message element
-        let messageEl = document.querySelector('.popup-message');
-        if (!messageEl) {
-            messageEl = document.createElement('div');
-            messageEl.className = 'popup-message';
-            const content = document.querySelector('.popup-content');
-            content.insertBefore(messageEl, content.firstChild);
-        }
+        // Create temporary toast message
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
 
-        messageEl.textContent = message;
-        messageEl.className = 'popup-message ' + type;
-
-        // Add styles if not already added
-        if (!document.querySelector('#popup-message-styles')) {
-            const style = document.createElement('style');
-            style.id = 'popup-message-styles';
-            style.textContent = '.popup-message { padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; font-weight: 500; text-align: center; } .popup-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; } .popup-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } @media (prefers-color-scheme: dark) { .popup-message.success { background: #1e3d23; color: #4ade80; border-color: #2d5a32; } .popup-message.error { background: #3d1e23; color: #f87171; border-color: #5a2d32; } }';
-            document.head.appendChild(style);
-        }
-
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            if (messageEl) {
-                messageEl.remove();
-            }
-        }, 3000);
-    }
-
-    showPrivacyInfo() {
-        const modal = this.createModal('Privacy Information', '<p><strong>AI Text Explainer Privacy Policy</strong></p><ul><li>Your API keys are stored locally in your browser only</li><li>Selected text is sent to your chosen AI provider for explanation</li><li>We do not store or log your text selections</li><li>No personal data is collected by this extension</li><li>You can delete all data by removing the extension</li></ul><p><small>Last updated: ' + new Date().toDateString() + '</small></p>');
-        document.body.appendChild(modal);
-    }
-
-    showHelp() {
-        const modal = this.createModal('Help & FAQ', '<p><strong>How to get started:</strong></p><ol><li>Click "Settings" to configure an AI provider</li><li>Add your API key for OpenAI, Anthropic, or Google Gemini</li><li>Select any text on a webpage</li><li>Click the "🤖 Explain" button that appears</li></ol><p><strong>Troubleshooting:</strong></p><ul><li>If explanations don\'t work, check your API key in settings</li><li>Make sure you have sufficient API credits</li><li>Try switching to a different AI model</li><li>Check your internet connection</li></ul><p><strong>Need more help?</strong> Contact support through the feedback option.</p>');
-        document.body.appendChild(modal);
-    }
-
-    showFeedback() {
-        const modal = this.createModal('Feedback', '<p>We\'d love to hear from you! Help us improve AI Text Explainer:</p><div style="margin: 16px 0;"><p><strong>Ways to provide feedback:</strong></p><ul><li>Report bugs or request features</li><li>Share your experience</li><li>Suggest new AI providers</li><li>Recommend improvements</li></ul></div><p><strong>Contact:</strong></p><p>📧 Email: support@aitextexplainer.com</p><p>🐛 GitHub: github.com/aitextexplainer</p><p><small>Thank you for using AI Text Explainer!</small></p>');
-        document.body.appendChild(modal);
-    }
-
-    createModal(title, content) {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = '<div class="modal-content"><div class="modal-header"><h3>' + title + '</h3><button class="modal-close">×</button></div><div class="modal-body">' + content + '</div></div>';
-
-        // Add modal styles
-        if (!document.querySelector('#modal-styles')) {
-            const style = document.createElement('style');
-            style.id = 'modal-styles';
-            style.textContent = '.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; } .modal-content { background: white; border-radius: 8px; max-width: 90%; max-height: 80%; overflow-y: auto; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); } .modal-header { padding: 16px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; justify-content: space-between; align-items: center; } .modal-header h3 { margin: 0; font-size: 16px; } .modal-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px; } .modal-close:hover { background: rgba(255, 255, 255, 0.1); } .modal-body { padding: 20px; font-size: 14px; line-height: 1.5; } .modal-body ul, .modal-body ol { padding-left: 20px; margin: 12px 0; } .modal-body li { margin-bottom: 6px; } @media (prefers-color-scheme: dark) { .modal-content { background: #2d2d2d; color: #e1e1e1; } }';
-            document.head.appendChild(style);
-        }
-
-        // Add close functionality
-        const closeBtn = modal.querySelector('.modal-close');
-        closeBtn.addEventListener('click', () => modal.remove());
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
+        // Style the toast
+        Object.assign(toast.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            color: 'white',
+            fontWeight: '500',
+            fontSize: '14px',
+            zIndex: '10000',
+            animation: 'slideIn 0.3s ease',
+            background: type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#6b7280'
         });
 
-        return modal;
+        document.body.appendChild(toast);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+
+        // Add CSS animations if not already added
+        if (!document.querySelector('#toast-animations')) {
+            const style = document.createElement('style');
+            style.id = 'toast-animations';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 }
 
@@ -235,3 +493,12 @@ class PopupManager {
 document.addEventListener('DOMContentLoaded', () => {
     new PopupManager();
 });
+
+// Handle browser extension context
+if (chrome && chrome.runtime) {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        console.log('Popup received message:', message);
+        // Handle any additional messages
+        return true;
+    });
+}

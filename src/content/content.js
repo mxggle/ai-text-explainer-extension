@@ -218,9 +218,16 @@ class TextExplainer {
                 <button class="ai-explainer-close-btn">×</button>
             </div>
             <div class="ai-explainer-dialog-content">
-                <div class="selected-text-context">
-                    <div class="context-label">Selected text:</div>
-                    <div class="context-text">"${displayText}"</div>
+                <div class="dictionary-entry">
+                    <div class="word-container">
+                        <div class="dictionary-word">${displayText}</div>
+                        <div class="pronunciation-container">
+                            <span class="pronunciation-region">US</span>
+                            <button class="pronunciation-btn" id="speak-btn">
+                                <span class="sound-icon">🔊</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 ${contextText ? `
                     <div class="context-section">
@@ -269,6 +276,11 @@ class TextExplainer {
 
         // Add copy button functionality
         const copyBtn = dialog.querySelector('#copy-btn');
+        
+        // Add speak button functionality
+        const speakBtn = dialog.querySelector('#speak-btn');
+        speakBtn.addEventListener('click', () => this.speakText(text));
+        
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(explanation).then(() => {
                 const icon = copyBtn.querySelector('.btn-icon');
@@ -342,6 +354,48 @@ class TextExplainer {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    speakText(text) {
+        // Stop any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        // Create a new utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set default properties
+        utterance.rate = 1.0;  // Normal speed
+        utterance.pitch = 1.0; // Normal pitch
+        utterance.volume = 1.0; // Full volume
+        
+        // Function to set voice and speak
+        const setVoiceAndSpeak = () => {
+            const voices = window.speechSynthesis.getVoices();
+            
+            // Try to find a good English voice
+            let voice = voices.find(voice => voice.lang.includes('en') && voice.name.includes('Google'));
+            
+            // If no Google voice found, use the first English voice
+            if (!voice) {
+                voice = voices.find(voice => voice.lang.includes('en'));
+            }
+            
+            // If an English voice is found, use it
+            if (voice) {
+                utterance.voice = voice;
+            }
+            
+            // Speak the text
+            window.speechSynthesis.speak(utterance);
+        };
+        
+        // Check if voices are already loaded
+        if (window.speechSynthesis.getVoices().length > 0) {
+            setVoiceAndSpeak();
+        } else {
+            // Wait for voices to be loaded
+            window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+        }
     }
 
     closeDialog() {
