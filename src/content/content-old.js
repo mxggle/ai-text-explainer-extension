@@ -196,6 +196,24 @@ class TextExplainer {
         }
 
         const dialog = this.createDialog();
+        const displayText = text.length > 100 ? text.substring(0, 100) + '...' : text;
+        const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
+
+        let contextSection = '';
+        if (contextText) {
+            contextSection = `
+                <div class="context-section">
+                    <div class="context-header" id="context-header">
+                        <div class="context-header-title">Current Context</div>
+                        <div class="context-toggle" id="context-toggle">▼</div>
+                    </div>
+                    <div class="context-content" id="context-content">
+                        <div class="context-full-text">${this.escapeHtml(contextText)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         dialog.innerHTML = `
       <div class="ai-explainer-dialog-header">
         <h3>AI Text Explainer</h3>
@@ -203,8 +221,9 @@ class TextExplainer {
       </div>
       <div class="ai-explainer-dialog-content">
         <div class="ai-explainer-selected-text">
-          <strong>Selected:</strong> "${text.length > 100 ? text.substring(0, 100) + '...' : text}"
+          <strong>Selected:</strong> "${displayText}"
         </div>
+        ${contextSection}
         <div class="ai-explainer-explanation">
           <strong>Explanation:</strong>
           <p>${explanation}</p>
@@ -219,6 +238,24 @@ class TextExplainer {
         // Add close button functionality
         const closeBtn = dialog.querySelector('.ai-explainer-close-btn');
         closeBtn.addEventListener('click', () => this.closeDialog());
+
+        // Add context toggle functionality
+        if (contextText) {
+            const contextHeader = dialog.querySelector('#context-header');
+            const contextContent = dialog.querySelector('#context-content');
+            const contextToggle = dialog.querySelector('#context-toggle');
+
+            contextHeader.addEventListener('click', () => {
+                const isExpanded = contextContent.classList.contains('show');
+                if (isExpanded) {
+                    contextContent.classList.remove('show');
+                    contextToggle.classList.remove('expanded');
+                } else {
+                    contextContent.classList.add('show');
+                    contextToggle.classList.add('expanded');
+                }
+            });
+        }
 
         this.currentDialog = dialog;
         document.body.appendChild(dialog);
@@ -259,6 +296,12 @@ class TextExplainer {
         dialog.className = 'ai-explainer-dialog';
         dialog.setAttribute('data-theme', this.settings.theme || 'auto');
         return dialog;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     closeDialog() {
