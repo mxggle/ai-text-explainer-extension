@@ -1,0 +1,288 @@
+// Background service worker for AI Text Explainer
+
+// Settings Manager class
+class SettingsManager {
+    constructor() {
+        this.defaultSettings = {
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            detailLevel: 'medium',
+            language: 'English',
+            theme: 'auto',
+            showShortcut: true,
+            apiKeys: {}
+        };
+    }
+
+    async getSettings() {
+        try {
+            const result = await chrome.storage.sync.get(['aiTextExplainerSettings']);
+            return {
+                ...this.defaultSettings,
+                ...result.aiTextExplainerSettings
+            };
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            return this.defaultSettings;
+        }
+    }
+
+    async saveSettings(settings) {
+        try {
+            await chrome.storage.sync.set({
+                aiTextExplainerSettings: {
+                    ...this.defaultSettings,
+                    ...settings
+                }
+            });
+            return true;
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            throw error;
+        }
+    }
+}
+
+// AI Service class
+class AIService {
+    constructor() {
+        this.providers = {
+            openai: {
+                name: 'OpenAI',
+                models: ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'],
+                endpoint: 'https://api.openai.com/v1/chat/completions'
+            },
+            anthropic: {
+                name: 'Anthropic',
+                models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+                endpoint: 'https://api.anthropic.com/v1/messages'
+            },
+            gemini: {
+                name: 'Google Gemini',
+                models: ['gemini-1.5-pro', 'gemini-1.5-flash'],
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
+            }
+        };
+    }
+
+    async explainText(selectedText, context, settings) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildExplanationPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAI(prompt, model, apiKey);
+            case 'anthropic':
+                return await this.callAnthropic(prompt, model, apiKey);
+            case 'gemini':
+                return await this.callGemini(prompt, model, apiKey);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
+    buildExplanationPrompt(selectedText, context, settings) {
+        const detailLevel = settings.detailLevel || 'medium';
+        const language = settings.language || 'English';
+
+        const detailInstructions = {
+            ultra_brief: 'Provide an ultra-concise explanation in exactly 1 sentence.',
+            brief: 'Provide a concise explanation in 1-2 sentences.',
+            medium: 'Provide a clear explanation in 2-3 sentences with key details.',
+            detailed: 'Provide a comprehensive explanation with examples and context.'
+        };
+
+        return 'You are an intelligent text explainer. Your task is to explain the meaning of selected text based on its surrounding context.\n\nSelected text: "' + selectedText + '"\n\nContext: "' + context + '"\n\nInstructions:\n- Explain the selected text considering its context\n- Use ' + language + ' language\n- ' + detailInstructions[detailLevel] + '\n- Focus on the meaning, significance, or implications\n- If it\'s a technical term, explain it in simple terms\n- If it\'s ambiguous, explain the most likely meaning given the context\n\nProvide only the explanation, no additional formatting or prefixes.';
+    }
+
+    async callOpenAI(prompt, model, apiKey) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 300,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('OpenAI API error: ' + (error.error && error.error.message || 'Unknown error'));
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content.trim();
+    }
+
+    async callAnthropic(prompt, model, apiKey) {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: model,
+                max_tokens: 300,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('Anthropic API error: ' + (error.error && error.error.message || 'Unknown error'));
+        }
+
+        const data = await response.json();
+        return data.content[0].text.trim();
+    }
+
+    async callGemini(prompt, model, apiKey) {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    maxOutputTokens: 300,
+                    temperature: 0.7
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('Gemini API error: ' + (error.error && error.error.message || 'Unknown error'));
+        }
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text.trim();
+    }
+
+    async testApiKey(provider, apiKey, model) {
+        try {
+            const testPrompt = 'Test connection';
+
+            switch (provider) {
+                case 'openai':
+                    await this.callOpenAI(testPrompt, model, apiKey);
+                    break;
+                case 'anthropic':
+                    await this.callAnthropic(testPrompt, model, apiKey);
+                    break;
+                case 'gemini':
+                    await this.callGemini(testPrompt, model, apiKey);
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('API key test failed:', error);
+            return false;
+        }
+    }
+
+    getAvailableProviders() {
+        return this.providers;
+    }
+}
+
+// Background Service class
+class BackgroundService {
+    constructor() {
+        this.aiService = new AIService();
+        this.settingsManager = new SettingsManager();
+        this.init();
+    }
+
+    init() {
+        // Set up context menu
+        chrome.runtime.onInstalled.addListener(() => {
+            this.createContextMenu();
+        });
+
+        // Handle messages from content scripts
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+            this.handleMessage(request, sender, sendResponse);
+            return true; // Will respond asynchronously
+        });
+    }
+
+    createContextMenu() {
+        chrome.contextMenus.create({
+            id: 'explain-text',
+            title: 'Explain selected text',
+            contexts: ['selection']
+        });
+
+        chrome.contextMenus.onClicked.addListener((info, tab) => {
+            if (info.menuItemId === 'explain-text') {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: 'explain-selection',
+                    text: info.selectionText
+                });
+            }
+        });
+    }
+
+    async handleMessage(request, sender, sendResponse) {
+        try {
+            switch (request.action) {
+                case 'explain-text':
+                    const explanation = await this.aiService.explainText(
+                        request.text,
+                        request.context,
+                        request.settings
+                    );
+                    sendResponse({ success: true, explanation: explanation });
+                    break;
+
+                case 'get-settings':
+                    const settings = await this.settingsManager.getSettings();
+                    sendResponse({ success: true, settings: settings });
+                    break;
+
+                case 'save-settings':
+                    await this.settingsManager.saveSettings(request.settings);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'test-api-key':
+                    const isValid = await this.aiService.testApiKey(
+                        request.provider,
+                        request.apiKey,
+                        request.model
+                    );
+                    sendResponse({ success: true, isValid: isValid });
+                    break;
+
+                default:
+                    sendResponse({ success: false, error: 'Unknown action' });
+            }
+        } catch (error) {
+            console.error('Background script error:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    }
+}
+
+// Initialize the background service
+new BackgroundService();

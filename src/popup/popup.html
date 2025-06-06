@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Explainer</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <header class="popup-header">
+            <div class="header-icon">🤖</div>
+            <h1>AI Text Explainer</h1>
+            <p>Select text to get instant explanations</p>
+        </header>
+
+        <main class="popup-content">
+            <div class="status-card">
+                <div class="status-indicator" id="status-indicator"></div>
+                <div class="status-info">
+                    <div class="status-text" id="extension-status">Active</div>
+                    <div class="provider-info" id="current-provider">Loading...</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="action-btn primary" id="open-settings">
+                    <span class="btn-icon">⚙️</span>
+                    Settings
+                </button>
+            </div>
+
+            <div class="usage-tip">
+                <div class="tip-icon">💡</div>
+                <p>Select any text on a webpage and click the "Explain" button that appears</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Explainer - Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+
+<body>
+    <div class="settings-container">
+        <header class="settings-header">
+            <div class="header-content">
+                <h1>🤖 AI Text Explainer Settings</h1>
+                <p>Configure your AI providers and preferences</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="reset-settings">Reset All</button>
+                <button class="btn btn-primary" id="save-settings">Save Changes</button>
+            </div>
+        </header>
+
+        <main class="settings-content">
+            <div class="settings-grid">
+                <!-- AI Provider Configuration -->
+                <section class="settings-section">
+                    <h2>🔧 AI Provider Configuration</h2>
+
+                    <div class="form-group">
+                        <label for="provider-select">AI Provider</label>
+                        <select id="provider-select" class="form-control">
+              <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="gemini">Google Gemini</option>
+            </select>
+                        <small class="form-text">Choose your preferred AI provider</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="model-select">Model</label>
+                        <select id="model-select" class="form-control">
+              <!-- Options populated by JavaScript -->
+            </select>
+                        <small class="form-text">Select the AI model to use for explanations</small>
+                    </div>
+
+                    <div class="api-key-section">
+                        <h3>API Keys</h3>
+                        <p class="api-key-info">Your API keys are stored securely in your browser and never shared.</p>
+
+                        <div class="api-key-tabs">
+                            <button class="api-tab active" data-provider="openai">OpenAI</button>
+                            <button class="api-tab" data-provider="anthropic">Anthropic</button>
+                            <button class="api-tab" data-provider="gemini">Google</button>
+                        </div>
+
+                        <div class="api-key-content">
+                            <div class="api-key-panel active" data-provider="openai">
+                                <div class="form-group">
+                                    <label for="openai-key">OpenAI API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" id="openai-key" class="form-control" placeholder="sk-...">
+                                        <button class="btn btn-outline toggle-visibility" data-target="openai-key">👁️</button>
+                                        <button class="btn btn-outline test-key" data-provider="openai">Test</button>
+                                    </div>
+                                    <small class="form-text">
+                    Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
+                  </small>
+                                </div>
+                            </div>
+
+                            <div class="api-key-panel" data-provider="anthropic">
+                                <div class="form-group">
+                                    <label for="anthropic-key">Anthropic API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" id="anthropic-key" class="form-control" placeholder="sk-ant-...">
+                                        <button class="btn btn-outline toggle-visibility" data-target="anthropic-key">👁️</button>
+                                        <button class="btn btn-outline test-key" data-provider="anthropic">Test</button>
+                                    </div>
+                                    <small class="form-text">
+                    Get your API key from <a href="https://console.anthropic.com/" target="_blank">Anthropic Console</a>
+                  </small>
+                                </div>
+                            </div>
+
+                            <div class="api-key-panel" data-provider="gemini">
+                                <div class="form-group">
+                                    <label for="gemini-key">Google Gemini API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" id="gemini-key" class="form-control" placeholder="AIza...">
+                                        <button class="btn btn-outline toggle-visibility" data-target="gemini-key">👁️</button>
+                                        <button class="btn btn-outline test-key" data-provider="gemini">Test</button>
+                                    </div>
+                                    <small class="form-text">
+                    Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                  </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Explanation Settings -->
+                <section class="settings-section">
+                    <h2>📝 Explanation Preferences</h2>
+
+                    <div class="form-group">
+                        <label for="detail-level">Detail Level</label>
+                        <select id="detail-level" class="form-control">
+              <option value="ultra_brief">Ultra Brief (1 sentence)</option>
+              <option value="brief">Brief (1-2 sentences)</option>
+              <option value="medium">Medium (2-3 sentences)</option>
+              <option value="detailed">Detailed (comprehensive)</option>
+            </select>
+                        <small class="form-text">How detailed should the explanations be?</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language-select">Language</label>
+                        <select id="language-select" class="form-control">
+              <option value="English">English</option>
+              <option value="Spanish">Español</option>
+              <option value="French">Français</option>
+              <option value="German">Deutsch</option>
+              <option value="Italian">Italiano</option>
+              <option value="Portuguese">Português</option>
+              <option value="Russian">Русский</option>
+              <option value="Chinese">中文</option>
+              <option value="Japanese">日本語</option>
+              <option value="Korean">한국어</option>
+              <option value="Arabic">العربية</option>
+              <option value="Hindi">हिन्दी</option>
+            </select>
+                        <small class="form-text">Language for AI explanations</small>
+                    </div>
+                </section>
+
+                <!-- User Interface Settings -->
+                <section class="settings-section">
+                    <h2>🎨 User Interface</h2>
+
+                    <div class="form-group">
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select" class="form-control">
+              <option value="auto">Auto (Follow System)</option>
+              <option value="light">Light Mode</option>
+              <option value="dark">Dark Mode</option>
+            </select>
+                        <small class="form-text">Choose your preferred theme</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+              <input type="checkbox" id="show-shortcuts" checked>
+              <span class="checkmark"></span>
+              Show keyboard shortcuts in explanations
+            </label>
+                    </div>
+                </section>
+
+                <!-- Advanced Settings -->
+                <section class="settings-section">
+                    <h2>⚙️ Advanced</h2>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+              <input type="checkbox" id="context-aware" checked>
+              <span class="checkmark"></span>
+              Use surrounding context for better explanations
+            </label>
+                        <small class="form-text">Include paragraph context when explaining text</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max-tokens">Max Response Length</label>
+                        <select id="max-tokens" class="form-control">
+              <option value="150">Short (150 tokens)</option>
+              <option value="300" selected>Medium (300 tokens)</option>
+              <option value="500">Long (500 tokens)</option>
+            </select>
+                        <small class="form-text">Longer responses may cost more API credits</small>
+                    </div>
+
+                    <div class="danger-zone">
+                        <h3>🚨 Danger Zone</h3>
+                        <button class="btn btn-danger" id="clear-all-data">Clear All Extension Data</button>
+                        <small class="form-text">This will remove all settings and API keys permanently</small>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Status Messages -->
+        <div id="status-message" class="status-message hidden"></div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirmation-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Confirm Action</h3>
+                    <button class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message">Are you sure you want to proceed?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                    <button class="btn btn-danger" id="modal-confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+
+</html>
