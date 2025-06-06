@@ -46,7 +46,8 @@ class PopupManager {
         const providers = {
             'openai': 'OpenAI',
             'anthropic': 'Anthropic Claude',
-            'gemini': 'Google Gemini'
+            'gemini': 'Google Gemini',
+            'xai': 'xAI Grok'
         };
         return providers[provider] || 'Unknown';
     }

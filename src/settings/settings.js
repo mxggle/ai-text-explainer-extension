@@ -112,10 +112,28 @@ class SettingsManager {
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearAllData());
         }
+
+        // Toggle visibility buttons
+        const toggleButtons = document.querySelectorAll('.toggle-visibility');
+        toggleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const targetInput = document.getElementById(targetId);
+                if (targetInput) {
+                    if (targetInput.type === 'password') {
+                        targetInput.type = 'text';
+                        btn.textContent = '🙈';
+                    } else {
+                        targetInput.type = 'password';
+                        btn.textContent = '👁️';
+                    }
+                }
+            });
+        });
     }
 
     setupApiKeyInputs() {
-        const providers = ['openai', 'anthropic', 'gemini'];
+        const providers = ['openai', 'anthropic', 'gemini', 'xai'];
 
         providers.forEach(provider => {
             const input = document.getElementById(provider + '-key');
@@ -125,7 +143,6 @@ class SettingsManager {
                         this.settings.apiKeys = {};
                     }
                     this.settings.apiKeys[provider] = e.target.value.trim();
-                    this.updateTestButton();
                 });
 
                 input.addEventListener('blur', () => {
@@ -243,6 +260,16 @@ class SettingsManager {
                 { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro ($1.25/$5 per 1M tokens) - Large context' },
                 { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash ($0.075/$0.30 per 1M tokens) - Fast & versatile' },
                 { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B ($0.0375/$0.15 per 1M tokens) - Most economical' }
+            ],
+            xai: [
+                { id: 'grok-3-beta', name: 'Grok 3 Beta (Pricing TBA) - Most advanced with Think mode & 1M context' },
+                { id: 'grok-3-fast-beta', name: 'Grok 3 Fast Beta ($5/$25 per 1M tokens) - Fast response version' },
+                { id: 'grok-3-mini-beta', name: 'Grok 3 Mini Beta ($0.30/$0.50 per 1M tokens) - Cost-efficient reasoning' },
+                { id: 'grok-3-mini-fast-beta', name: 'Grok 3 Mini Fast Beta ($0.60/$4 per 1M tokens) - Fast mini version' },
+                { id: 'grok-beta', name: 'Grok Beta ($5/$15 per 1M tokens) - Comparable to Grok 2 with efficiency' },
+                { id: 'grok-vision-beta', name: 'Grok Vision Beta (Pricing TBA) - Vision capabilities for images' },
+                { id: 'grok-vision-2', name: 'Grok Vision 2 (Pricing TBA) - Enhanced vision processing' },
+                { id: 'grok-2', name: 'Grok 2 ($2/$10 per 1M tokens) - Previous generation model' }
             ]
         };
 
@@ -260,7 +287,7 @@ class SettingsManager {
         this.updateModelOptions();
 
         // Update API key inputs
-        const providers = ['openai', 'anthropic', 'gemini'];
+        const providers = ['openai', 'anthropic', 'gemini', 'xai'];
         providers.forEach(provider => {
             const input = document.getElementById(provider + '-key');
             if (input && this.settings.apiKeys && this.settings.apiKeys[provider]) {

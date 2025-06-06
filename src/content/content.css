@@ -151,97 +151,134 @@
     color: #4a453f !important;
 }
 
-/* Dictionary Entry Styling */
-.dictionary-entry {
-    padding: 12px 8px !important;
-    background: #f8f6f3 !important;
+
+/* Selected Text Section */
+
+.selected-text-section {
+    background: #f9f8f6 !important;
+    border: 1px solid #e7e2db !important;
     border-radius: 6px !important;
+    padding: 12px !important;
+    margin-bottom: 16px !important;
+}
+
+.selected-text-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8b7355 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 6px !important;
+}
+
+.selected-text-display {
+    font-size: 13px !important;
+    color: #2d2a26 !important;
+    line-height: 1.4 !important;
+    font-weight: 500 !important;
+}
+
+
+/* Dictionary Entry Styling */
+
+.dictionary-entry {
+    padding: 20px 16px !important;
+    background: #fdfdfc !important;
+    border: 1px solid #e7e2db !important;
+    border-radius: 8px !important;
     margin-bottom: 16px !important;
 }
 
 .word-container {
     display: flex !important;
     justify-content: space-between !important;
-    align-items: center !important;
-    margin-bottom: 8px !important;
+    align-items: flex-start !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 2px solid #f0ede8 !important;
 }
 
 .dictionary-word {
-    font-size: 22px !important;
+    font-size: 28px !important;
     font-weight: 700 !important;
-    color: #2d2a26 !important;
+    color: #1a1612 !important;
     font-family: Georgia, 'Times New Roman', serif !important;
-    letter-spacing: -0.01em !important;
-    line-height: 1.3 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
 }
 
 .pronunciation-container {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-}
-
-.pronunciation-region {
-    font-size: 11px !important;
-    color: #6b6459 !important;
-    background: #ebe8e3 !important;
-    padding: 2px 4px !important;
-    border-radius: 3px !important;
-    font-weight: 500 !important;
-}
-
-.pronunciation {
-    font-size: 13px !important;
-    color: #6b6459 !important;
-    font-family: sans-serif !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
 }
 
 .pronunciation-btn {
-    background: transparent !important;
-    border: none !important;
+    background: #f5f3f0 !important;
+    border: 1px solid #e7e2db !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
     cursor: pointer !important;
-    padding: 2px !important;
+    transition: all 0.2s ease !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
 
+.pronunciation-btn:hover {
+    background: #ebe8e3 !important;
+    transform: translateY(-1px) !important;
+}
+
+.pronunciation-btn:active {
+    transform: translateY(0) !important;
+}
+
 .sound-icon {
-    font-size: 14px !important;
+    font-size: 16px !important;
     color: #6b6459 !important;
 }
 
-.part-of-speech {
-    margin-bottom: 8px !important;
+.definition-section {
+    margin-top: 16px !important;
 }
 
-.pos-tag {
-    font-size: 14px !important;
-    color: #6b6459 !important;
-    font-style: italic !important;
-    font-weight: 500 !important;
+.definition-content {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+    color: #2d2a26 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.definition-content p {
+    margin: 0 0 12px 0 !important;
+}
+
+.definition-content p:last-child {
+    margin-bottom: 0 !important;
 }
 
 
 /* Context Section - Foldable */
 
 .context-section {
-    margin-bottom: 16px !important;
-    border: 1px solid #ebe8e3 !important;
-    border-radius: 6px !important;
-    overflow: hidden !important;
     background: #f8f6f3 !important;
+    border: 1px solid #e7e2db !important;
+    border-radius: 8px !important;
+    margin-bottom: 16px !important;
+    overflow: hidden !important;
 }
 
 .context-header {
     display: flex !important;
-    align-items: center !important;
     justify-content: space-between !important;
-    padding: 8px 12px !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
     cursor: pointer !important;
-    background: #f5f3f0 !important;
-    border-bottom: 1px solid #ebe8e3 !important;
-    transition: background-color 0.15s ease !important;
+    transition: background-color 0.2s ease !important;
+    user-select: none !important;
 }
 
 .context-header:hover {
@@ -249,16 +286,17 @@
 }
 
 .context-header-title {
-    font-size: 10px !important;
-    font-weight: 500 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
     color: #6b6459 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.03em !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
 }
 
 .context-toggle {
     font-size: 12px !important;
-    color: #6b6459 !important;
+    color: #8b7355 !important;
     transition: transform 0.2s ease !important;
 }
 
@@ -267,23 +305,23 @@
 }
 
 .context-content {
-    padding: 12px !important;
-    background: #faf9f7 !important;
-    max-height: 200px !important;
-    overflow-y: auto !important;
-    display: none !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease !important;
 }
 
 .context-content.show {
-    display: block !important;
+    max-height: 300px !important;
 }
 
 .context-full-text {
-    font-size: 12px !important;
+    padding: 0 16px 16px 16px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
     color: #4a453f !important;
-    line-height: 1.4 !important;
-    white-space: pre-wrap !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    border-top: 1px solid #e7e2db !important;
+    margin-top: 0 !important;
+    padding-top: 16px !important;
 }
 
 
@@ -311,14 +349,14 @@
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    padding: 24px 16px !important;
+    padding: 32px 16px !important;
     gap: 12px !important;
 }
 
 .loading-spinner {
-    width: 20px !important;
-    height: 20px !important;
-    border: 2px solid #f0ede8 !important;
+    width: 24px !important;
+    height: 24px !important;
+    border: 2px solid #e7e2db !important;
     border-top: 2px solid #8b7355 !important;
     border-radius: 50% !important;
     animation: ai-explainer-spin 1s linear infinite !important;
@@ -334,9 +372,10 @@
 }
 
 .loading-text {
-    font-size: 12px !important;
+    font-size: 14px !important;
     color: #6b6459 !important;
-    font-weight: 400 !important;
+    font-weight: 500 !important;
+    text-align: center !important;
 }
 
 
@@ -509,6 +548,19 @@
     color: #d9d4cc !important;
 }
 
+.ai-explainer-dialog[data-theme="dark"] .selected-text-section {
+    background: #2a2724 !important;
+    border-color: rgba(235, 232, 227, 0.1) !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .selected-text-label {
+    color: #a8a296 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .selected-text-display {
+    color: #e8e6e3 !important;
+}
+
 
 /* Auto Theme */
 
@@ -592,6 +644,51 @@
     .ai-explainer-dialog[data-theme="auto"] .context-full-text {
         color: #d9d4cc !important;
     }
+    .ai-explainer-dialog[data-theme="auto"] .selected-text-section {
+        background: #2a2724 !important;
+        border-color: rgba(235, 232, 227, 0.1) !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .selected-text-label {
+        color: #a8a296 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .selected-text-display {
+        color: #e5e1db !important;
+    }
+    /* Auto theme for dictionary styles */
+    .ai-explainer-dialog[data-theme="auto"] .dictionary-entry {
+        background: #2a2724 !important;
+        border-color: #3f3a33 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .dictionary-word {
+        color: #f5f3f0 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .word-container {
+        border-bottom-color: #3f3a33 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .pronunciation-btn {
+        background: #3f3a33 !important;
+        border-color: #4a453f !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .pronunciation-btn:hover {
+        background: #4a453f !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .pronunciation-btn:disabled {
+        background: #3f3a33 !important;
+        border-color: #2a2724 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .sound-icon {
+        color: #a19891 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .definition-content {
+        color: #e5e1db !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .loading-spinner {
+        border-color: #3f3a33 !important;
+        border-top-color: #a19891 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .loading-text {
+        color: #a19891 !important;
+    }
 }
 
 
@@ -626,4 +723,70 @@
 
 .ai-explainer-floating-button * {
     box-sizing: border-box !important;
+}
+
+
+/* Disabled pronunciation button */
+
+.pronunciation-btn:disabled {
+    background: #f0ede8 !important;
+    border-color: #e7e2db !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.pronunciation-btn:disabled:hover {
+    transform: none !important;
+    background: #f0ede8 !important;
+}
+
+.pronunciation-btn:disabled .sound-icon {
+    color: #a19891 !important;
+}
+
+
+/* Dark theme for dictionary styles */
+
+.ai-explainer-dialog[data-theme="dark"] .dictionary-entry {
+    background: #2a2724 !important;
+    border-color: #3f3a33 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .dictionary-word {
+    color: #f5f3f0 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .word-container {
+    border-bottom-color: #3f3a33 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .pronunciation-btn {
+    background: #3f3a33 !important;
+    border-color: #4a453f !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .pronunciation-btn:hover {
+    background: #4a453f !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .pronunciation-btn:disabled {
+    background: #3f3a33 !important;
+    border-color: #2a2724 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .sound-icon {
+    color: #a19891 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .definition-content {
+    color: #e5e1db !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .loading-spinner {
+    border-color: #3f3a33 !important;
+    border-top-color: #a19891 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .loading-text {
+    color: #a19891 !important;
 }

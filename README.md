@@ -99,8 +99,8 @@ Choose one or more AI providers and obtain API keys:
 ## 🎨 Customization Options
 
 ### AI Provider Settings
-- **Provider**: OpenAI, Anthropic, or Google Gemini
-- **Model**: Choose from available models (GPT-4, Claude-3, Gemini-Pro, etc.)
+- **Provider**: OpenAI, Anthropic, Google Gemini, or xAI
+- **Model**: Choose from available models (GPT-4, Claude-3, Gemini-Pro, Grok-3, etc.)
 - **Response Length**: Short (150), Medium (300), or Long (500) tokens
 
 ### Explanation Preferences
@@ -156,6 +156,16 @@ Choose one or more AI providers and obtain API keys:
 ### Google Gemini Models
 - **Gemini-1.5-Pro**: Advanced reasoning and analysis
 - **Gemini-1.5-Flash**: Fast responses for quick explanations
+
+### xAI Models
+- **Grok 3 Beta**: Most advanced with Think mode & 1M context window
+- **Grok 3 Fast Beta**: Fast response version ($5/$25 per 1M tokens)
+- **Grok 3 Mini Beta**: Cost-efficient reasoning ($0.30/$0.50 per 1M tokens)
+- **Grok 3 Mini Fast Beta**: Fast mini version ($0.60/$4 per 1M tokens)
+- **Grok Beta**: Comparable to Grok 2 with improved efficiency ($5/$15 per 1M tokens)
+- **Grok Vision Beta**: Vision capabilities for image analysis
+- **Grok Vision 2**: Enhanced vision processing
+- **Grok 2**: Previous generation model ($2/$10 per 1M tokens)
 
 ## 🌍 Supported Languages
 

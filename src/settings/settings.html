@@ -33,6 +33,7 @@
               <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
               <option value="anthropic">Anthropic (Claude)</option>
               <option value="gemini">Google Gemini</option>
+              <option value="xai">xAI (Grok)</option>
             </select>
                         <small class="form-text">Choose your preferred AI provider</small>
                     </div>
@@ -53,6 +54,7 @@
                             <button class="api-tab active" data-provider="openai">OpenAI</button>
                             <button class="api-tab" data-provider="anthropic">Anthropic</button>
                             <button class="api-tab" data-provider="gemini">Google</button>
+                            <button class="api-tab" data-provider="xai">xAI</button>
                         </div>
 
                         <div class="api-key-content">
@@ -94,6 +96,20 @@
                                     </div>
                                     <small class="form-text">
                     Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                  </small>
+                                </div>
+                            </div>
+
+                            <div class="api-key-panel" data-provider="xai">
+                                <div class="form-group">
+                                    <label for="xai-key">xAI API Key</label>
+                                    <div class="input-group">
+                                        <input type="password" id="xai-key" class="form-control" placeholder="xai-...">
+                                        <button class="btn btn-outline toggle-visibility" data-target="xai-key">👁️</button>
+                                        <button class="btn btn-outline test-key" data-provider="xai">Test</button>
+                                    </div>
+                                    <small class="form-text">
+                    Get your API key from <a href="https://console.x.ai/team/default/api-keys" target="_blank">xAI Console</a>
                   </small>
                                 </div>
                             </div>

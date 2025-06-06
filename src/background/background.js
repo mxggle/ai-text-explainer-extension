@@ -61,6 +61,11 @@ class AIService {
                 name: 'Google Gemini',
                 models: ['gemini-1.5-pro', 'gemini-1.5-flash'],
                 endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
+            },
+            xai: {
+                name: 'xAI',
+                models: ['grok-3-beta', 'grok-3-fast-beta', 'grok-3-mini-beta', 'grok-3-mini-fast-beta', 'grok-beta', 'grok-vision-beta', 'grok-vision-2', 'grok-2'],
+                endpoint: 'https://api.x.ai/v1/chat/completions'
             }
         };
     }
@@ -83,6 +88,8 @@ class AIService {
                 return await this.callAnthropic(prompt, model, apiKey);
             case 'gemini':
                 return await this.callGemini(prompt, model, apiKey);
+            case 'xai':
+                return await this.callXAI(prompt, model, apiKey);
             default:
                 throw new Error('Unsupported provider: ' + provider);
         }
@@ -176,6 +183,38 @@ class AIService {
         return data.candidates[0].content.parts[0].text.trim();
     }
 
+    async callXAI(prompt, model, apiKey) {
+        const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 300,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('xAI API error: ' + (error.error && error.error.message || 'Unknown error'));
+        }
+
+        const data = await response.json();
+        const message = data.choices[0].message;
+
+        // xAI's Grok models sometimes put the actual response in reasoning_content instead of content
+        // So we check reasoning_content first if content is empty
+        if (!message.content && message.reasoning_content) {
+            return message.reasoning_content.trim();
+        }
+
+        return message.content ? message.content.trim() : '';
+    }
+
     async testApiKey(provider, apiKey, model) {
         try {
             const testPrompt = 'Test connection';
@@ -189,6 +228,9 @@ class AIService {
                     break;
                 case 'gemini':
                     await this.callGemini(testPrompt, model, apiKey);
+                    break;
+                case 'xai':
+                    await this.callXAI(testPrompt, model, apiKey);
                     break;
                 default:
                     return false;
@@ -272,6 +314,13 @@ class BackgroundService {
                         request.model
                     );
                     sendResponse({ success: true, isValid: isValid });
+                    break;
+
+                case 'open-settings':
+                    chrome.tabs.create({
+                        url: chrome.runtime.getURL('src/settings/settings.html')
+                    });
+                    sendResponse({ success: true });
                     break;
 
                 default:

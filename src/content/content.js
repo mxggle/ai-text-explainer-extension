@@ -172,22 +172,33 @@ class TextExplainer {
         const dialog = this.createDialog();
         const displayText = text.length > 150 ? text.substring(0, 150) + '...' : text;
 
+        // Extract just the word or phrase for dictionary-style display
+        const wordToDefine = text.trim().replace(/['"]/g, '');
+
         dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
                 <div class="header-content">
-                    <div class="ai-icon">🤖</div>
-                    <h3>AI Explanation</h3>
+                    <div class="ai-icon">📖</div>
+                    <h3>Dictionary</h3>
                 </div>
                 <button class="ai-explainer-close-btn">×</button>
             </div>
             <div class="ai-explainer-dialog-content">
-                <div class="selected-text-context">
-                    <div class="context-label">Selected text:</div>
-                    <div class="context-text">"${displayText}"</div>
-                </div>
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">Generating explanation...</div>
+                <div class="dictionary-entry">
+                    <div class="word-container">
+                        <div class="dictionary-word">${this.escapeHtml(wordToDefine)}</div>
+                        <div class="pronunciation-container">
+                            <button class="pronunciation-btn" disabled title="Loading...">
+                                <span class="sound-icon">🔊</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="definition-section">
+                        <div class="loading-content">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Looking up definition...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -209,30 +220,37 @@ class TextExplainer {
             const displayText = text.length > 150 ? text.substring(0, 150) + '...' : text;
             const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
 
+            // Extract just the word or phrase for dictionary-style display
+            const wordToDefine = text.trim().replace(/['"]/g, '');
+
             dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
                 <div class="header-content">
-                    <div class="ai-icon">🤖</div>
-                    <h3>AI Explanation</h3>
+                    <div class="ai-icon">📖</div>
+                    <h3>Dictionary</h3>
                 </div>
                 <button class="ai-explainer-close-btn">×</button>
             </div>
             <div class="ai-explainer-dialog-content">
                 <div class="dictionary-entry">
                     <div class="word-container">
-                        <div class="dictionary-word">${displayText}</div>
+                        <div class="dictionary-word">${this.escapeHtml(wordToDefine)}</div>
                         <div class="pronunciation-container">
-                            <span class="pronunciation-region">US</span>
-                            <button class="pronunciation-btn" id="speak-btn">
+                            <button class="pronunciation-btn" id="speak-btn" title="Pronounce word">
                                 <span class="sound-icon">🔊</span>
                             </button>
+                        </div>
+                    </div>
+                    <div class="definition-section">
+                        <div class="definition-content">
+                            ${explanation}
                         </div>
                     </div>
                 </div>
                 ${contextText ? `
                     <div class="context-section">
                         <div class="context-header" id="context-header">
-                            <div class="context-header-title">Current Context</div>
+                            <div class="context-header-title">📄 Context</div>
                             <div class="context-toggle" id="context-toggle">▼</div>
                         </div>
                         <div class="context-content" id="context-content">
@@ -240,13 +258,14 @@ class TextExplainer {
                         </div>
                     </div>
                 ` : ''}
-                <div class="explanation-content">
-                    <div class="explanation-text">${explanation}</div>
-                </div>
                 <div class="dialog-actions">
                     <button class="action-btn copy-btn" id="copy-btn">
                         <span class="btn-icon">📋</span>
-                        Copy
+                        Copy Definition
+                    </button>
+                    <button class="action-btn settings-btn" id="settings-btn">
+                        <span class="btn-icon">⚙️</span>
+                        Settings
                     </button>
                 </div>
             </div>
@@ -255,6 +274,12 @@ class TextExplainer {
         // Add close button functionality
         const closeBtn = dialog.querySelector('.ai-explainer-close-btn');
         closeBtn.addEventListener('click', () => this.closeDialog());
+
+        // Add pronunciation button functionality
+        const speakBtn = dialog.querySelector('#speak-btn');
+        speakBtn.addEventListener('click', () => {
+            this.speakText(wordToDefine);
+        });
 
         // Add context toggle functionality
         if (contextText) {
@@ -276,13 +301,19 @@ class TextExplainer {
 
         // Add copy button functionality
         const copyBtn = dialog.querySelector('#copy-btn');
-        
-        // Add speak button functionality
-        const speakBtn = dialog.querySelector('#speak-btn');
-        speakBtn.addEventListener('click', () => this.speakText(text));
+
+        // Add settings button functionality
+        const settingsBtn = dialog.querySelector('#settings-btn');
+        settingsBtn.addEventListener('click', () => {
+            chrome.runtime.sendMessage({
+                action: 'open-settings'
+            });
+            this.closeDialog();
+        });
         
         copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(explanation).then(() => {
+            const definitionText = `${wordToDefine}\n\n${explanation}`;
+            navigator.clipboard.writeText(definitionText).then(() => {
                 const icon = copyBtn.querySelector('.btn-icon');
                 const originalText = copyBtn.childNodes[2].textContent.trim();
                 icon.textContent = '✓';
@@ -291,7 +322,7 @@ class TextExplainer {
 
                 setTimeout(() => {
                     icon.textContent = '📋';
-                    copyBtn.childNodes[2].textContent = ' Copy';
+                    copyBtn.childNodes[2].textContent = ' Copy Definition';
                     copyBtn.classList.remove('success');
                 }, 2000);
             });

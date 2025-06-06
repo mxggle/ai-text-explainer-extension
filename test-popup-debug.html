@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popup Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .debug-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        
+        .debug-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #005a87;
+        }
+        
+        #console-output {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🤖 AI Text Explainer - Popup Debug Test</h1>
+
+    <div class="debug-section">
+        <div class="debug-title">Test Instructions:</div>
+        <ol>
+            <li>Open Chrome Extensions (chrome://extensions/)</li>
+            <li>Enable Developer Mode</li>
+            <li>Click "Load unpacked" and select your extension folder</li>
+            <li>Open the browser console (F12) and check for errors</li>
+            <li>Click the extension icon to open the popup</li>
+            <li>Check console logs for debugging information</li>
+        </ol>
+    </div>
+
+    <div class="debug-section">
+        <div class="debug-title">Expected Behavior:</div>
+        <ul>
+            <li>✅ Provider dropdown should show "xAI" if selected in settings</li>
+            <li>✅ Model dropdown should populate with xAI models</li>
+            <li>✅ All dropdowns should be clickable and responsive</li>
+            <li>✅ Settings should sync between popup and settings page</li>
+        </ul>
+    </div>
+
+    <div class="debug-section">
+        <div class="debug-title">Common Issues & Solutions:</div>
+        <ul>
+            <li><strong>Empty Model Dropdown:</strong> Check console for "No models available" warnings</li>
+            <li><strong>Non-clickable Elements:</strong> Check for JavaScript errors in console</li>
+            <li><strong>Settings Not Syncing:</strong> Check storage permissions in manifest.json</li>
+            <li><strong>API Key Issues:</strong> Verify API key format and storage</li>
+        </ul>
+    </div>
+
+    <div class="debug-section">
+        <div class="debug-title">Console Debug Output:</div>
+        <div id="console-output">Waiting for console logs...</div>
+    </div>
+
+    <script>
+        // Capture console logs for debugging
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const output = document.getElementById('console-output');
+
+        function addToOutput(type, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.createElement('div');
+            logElement.innerHTML = `[${timestamp}] ${type}: ${message}`;
+            output.appendChild(logElement);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            addToOutput('LOG', args.join(' '));
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            addToOutput('ERROR', args.join(' '));
+            originalError.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+            addToOutput('WARN', args.join(' '));
+            originalWarn.apply(console, args);
+        };
+
+        // Test if we can access extension APIs
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            addToOutput('INFO', 'Chrome extension APIs available');
+        } else {
+            addToOutput('WARN', 'Chrome extension APIs not available (normal for test page)');
+        }
+    </script>
+</body>
+
+</html>
