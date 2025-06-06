@@ -54,33 +54,13 @@ class AIService {
             },
             anthropic: {
                 name: 'Anthropic',
-                models: ['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'],
+                models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
                 endpoint: 'https://api.anthropic.com/v1/messages'
             },
             gemini: {
                 name: 'Google Gemini',
                 models: ['gemini-1.5-pro', 'gemini-1.5-flash'],
                 endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
-            },
-            mistral: {
-                name: 'Mistral AI',
-                models: ['mistral-large', 'mistral-medium', 'mistral-small', 'open-mistral-7b'],
-                endpoint: 'https://api.mistral.ai/v1/chat/completions'
-            },
-            cohere: {
-                name: 'Cohere',
-                models: ['command-r-plus', 'command-r', 'command-light'],
-                endpoint: 'https://api.cohere.ai/v1/chat'
-            },
-            xai: {
-                name: 'xAI Grok',
-                models: ['grok-3', 'grok-2', 'grok-1'],
-                endpoint: 'https://api.x.ai/v1/chat/completions'
-            },
-            deepseek: {
-                name: 'DeepSeek',
-                models: ['deepseek-chat', 'deepseek-reasoner'],
-                endpoint: 'https://api.deepseek.com/v1/chat/completions'
             }
         };
     }
@@ -103,14 +83,6 @@ class AIService {
                 return await this.callAnthropic(prompt, model, apiKey);
             case 'gemini':
                 return await this.callGemini(prompt, model, apiKey);
-            case 'mistral':
-                return await this.callMistral(prompt, model, apiKey);
-            case 'cohere':
-                return await this.callCohere(prompt, model, apiKey);
-            case 'xai':
-                return await this.callXAI(prompt, model, apiKey);
-            case 'deepseek':
-                return await this.callDeepSeek(prompt, model, apiKey);
             default:
                 throw new Error('Unsupported provider: ' + provider);
         }
@@ -204,103 +176,6 @@ class AIService {
         return data.candidates[0].content.parts[0].text.trim();
     }
 
-    async callMistral(prompt, model, apiKey) {
-        const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error('Mistral AI error: ' + (error.error && error.error.message || 'Unknown error'));
-        }
-
-        const data = await response.json();
-        return data.choices[0].message.content.trim();
-    }
-
-    async callCohere(prompt, model, apiKey) {
-        const response = await fetch('https://api.cohere.ai/v1/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                message: prompt,
-                max_tokens: 300,
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error('Cohere API error: ' + (error.message || 'Unknown error'));
-        }
-
-        const data = await response.json();
-        return data.text?.trim() || 'No response from Cohere API';
-    }
-
-    async callXAI(prompt, model, apiKey) {
-        const response = await fetch('https://api.x.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error('xAI Grok error: ' + (error.error && error.error.message || 'Unknown error'));
-        }
-
-        const data = await response.json();
-        return data.choices[0].message.content.trim();
-    }
-
-    async callDeepSeek(prompt, model, apiKey) {
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error('DeepSeek error: ' + (error.error && error.error.message || 'Unknown error'));
-        }
-
-        const data = await response.json();
-        return data.choices[0].message.content.trim();
-    }
-
     async testApiKey(provider, apiKey, model) {
         try {
             const testPrompt = 'Test connection';
@@ -314,18 +189,6 @@ class AIService {
                     break;
                 case 'gemini':
                     await this.callGemini(testPrompt, model, apiKey);
-                    break;
-                case 'mistral':
-                    await this.callMistral(testPrompt, model, apiKey);
-                    break;
-                case 'cohere':
-                    await this.callCohere(testPrompt, model, apiKey);
-                    break;
-                case 'xai':
-                    await this.callXAI(testPrompt, model, apiKey);
-                    break;
-                case 'deepseek':
-                    await this.callDeepSeek(testPrompt, model, apiKey);
                     break;
                 default:
                     return false;
