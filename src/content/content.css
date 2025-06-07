@@ -72,7 +72,7 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: 8px 16px !important;
+    padding: 6px 12px !important;
     background: #f5f3f0 !important;
     color: #2d2a26 !important;
     border-bottom: 1px solid #ebe8e3 !important;
@@ -124,7 +124,7 @@
 /* Dialog Content - Focused on explanation */
 
 .ai-explainer-dialog-content {
-    padding: 18px !important;
+    padding: 12px !important;
     max-height: 60vh !important;
     overflow-y: auto !important;
 }
@@ -182,30 +182,33 @@
 /* Dictionary Entry Styling */
 
 .dictionary-entry {
-    padding: 20px 16px !important;
+    padding: 14px 12px !important;
     background: #fdfdfc !important;
     border: 1px solid #e7e2db !important;
     border-radius: 8px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: 12px !important;
 }
 
 .word-container {
     display: flex !important;
     justify-content: space-between !important;
     align-items: flex-start !important;
-    margin-bottom: 16px !important;
-    padding-bottom: 12px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
     border-bottom: 2px solid #f0ede8 !important;
+    gap: 8px !important;
 }
 
 .dictionary-word {
-    font-size: 28px !important;
+    font-size: 22px !important;
     font-weight: 700 !important;
-    color: #1a1612 !important;
-    font-family: Georgia, 'Times New Roman', serif !important;
-    letter-spacing: -0.02em !important;
-    line-height: 1.2 !important;
-    margin: 0 !important;
+    color: #2d2a26 !important;
+    line-height: 1.3 !important;
+    flex: 1 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+    max-width: calc(100% - 40px) !important;
 }
 
 .pronunciation-container {
@@ -242,7 +245,7 @@
 }
 
 .definition-section {
-    margin-top: 16px !important;
+    margin-top: 10px !important;
 }
 
 .definition-content {
@@ -267,7 +270,7 @@
     background: #f8f6f3 !important;
     border: 1px solid #e7e2db !important;
     border-radius: 8px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: 12px !important;
     overflow: hidden !important;
 }
 
@@ -275,7 +278,7 @@
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: 12px 16px !important;
+    padding: 10px 12px !important;
     cursor: pointer !important;
     transition: background-color 0.2s ease !important;
     user-select: none !important;
@@ -315,13 +318,13 @@
 }
 
 .context-full-text {
-    padding: 0 16px 16px 16px !important;
+    padding: 0 12px 12px 12px !important;
     font-size: 13px !important;
     line-height: 1.5 !important;
     color: #4a453f !important;
     border-top: 1px solid #e7e2db !important;
     margin-top: 0 !important;
-    padding-top: 16px !important;
+    padding-top: 12px !important;
 }
 
 
@@ -701,7 +704,7 @@
         margin: 16px !important;
     }
     .ai-explainer-dialog-content {
-        padding: 14px !important;
+        padding: 10px !important;
     }
     .ai-explainer-floating-button {
         font-size: 10px !important;
@@ -710,6 +713,19 @@
     .explanation-text {
         font-size: 14px !important;
         line-height: 1.45 !important;
+    }
+    .dictionary-entry {
+        padding: 10px 8px !important;
+        margin-bottom: 8px !important;
+    }
+    .dictionary-word {
+        font-size: 20px !important;
+        line-height: 1.2 !important;
+    }
+    .word-container {
+        gap: 6px !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 6px !important;
     }
 }
 

@@ -221,7 +221,16 @@ class TextExplainer {
             const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
 
             // Extract just the word or phrase for dictionary-style display
-            const wordToDefine = text.trim().replace(/['"]/g, '');
+            // For very long text, show only the first few words with ellipsis
+            let wordToDefine = text.trim().replace(/['"]/g, '');
+            if (wordToDefine.length > 100) {
+                const words = wordToDefine.split(' ');
+                if (words.length > 8) {
+                    wordToDefine = words.slice(0, 8).join(' ') + '...';
+                } else {
+                    wordToDefine = wordToDefine.substring(0, 100) + '...';
+                }
+            }
 
             dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
