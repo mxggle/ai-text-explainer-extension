@@ -98,6 +98,7 @@ class AIService {
     buildExplanationPrompt(selectedText, context, settings) {
         const detailLevel = settings.detailLevel || 'medium';
         const language = settings.language || 'English';
+        const isSentence = this.isSentence(selectedText);
 
         const detailInstructions = {
             ultra_brief: 'Provide an ultra-concise explanation in exactly 1 sentence.',
@@ -106,7 +107,75 @@ class AIService {
             detailed: 'Provide a comprehensive explanation with examples and context.'
         };
 
-        return 'You are an intelligent text explainer. Your task is to explain the meaning of selected text based on its surrounding context.\n\nSelected text: "' + selectedText + '"\n\nContext: "' + context + '"\n\nInstructions:\n- Explain the selected text considering its context\n- Use ' + language + ' language\n- ' + detailInstructions[detailLevel] + '\n- Focus on the meaning, significance, or implications\n- If it\'s a technical term, explain it in simple terms\n- If it\'s ambiguous, explain the most likely meaning given the context\n\nProvide only the explanation, no additional formatting or prefixes.';
+        if (isSentence) {
+            // For sentences: translate + explain in context
+            return `You are an intelligent text explainer. Your task is to translate and explain sentences based on their context.
+
+Selected sentence: "${selectedText}"
+
+Context: "${context}"
+
+Instructions:
+1. First, if the sentence is not in ${language}, translate it to ${language}. If it's already in ${language}, skip translation.
+2. Then explain the sentence considering its context
+3. ${detailInstructions[detailLevel]}
+4. Focus on the meaning, significance, or implications of the sentence
+5. If it contains technical terms or cultural references, explain them
+
+Format your response as:
+**Translation:** [translation if needed, or "Already in ${language}"]
+**Explanation:** [your explanation]
+
+Provide only the translation and explanation, no additional formatting or prefixes.`;
+        } else {
+            // For non-sentences: dictionary definition + explain in context
+            return `You are an intelligent text explainer. Your task is to provide dictionary definitions and contextual explanations for words or phrases.
+
+Selected text: "${selectedText}"
+
+Context: "${context}"
+
+Instructions:
+1. First, provide a dictionary-style definition of the selected text
+2. Then explain how it's used in the given context
+3. Use ${language} language
+4. ${detailInstructions[detailLevel]}
+5. If it's a technical term, explain it in simple terms
+6. If it has multiple meanings, focus on the most relevant one given the context
+
+Format your response as:
+**Definition:** [dictionary definition]
+**In Context:** [contextual explanation]
+
+Provide only the definition and contextual explanation, no additional formatting or prefixes.`;
+        }
+    }
+
+    isSentence(text) {
+        const trimmed = text.trim();
+
+        // Check if it's too short to be a sentence (less than 2 words typically)
+        const words = trimmed.split(/\s+/).filter(word => word.length > 0);
+        if (words.length < 2) {
+            return false;
+        }
+
+        // Check if it ends with sentence-ending punctuation
+        const endsWithPunctuation = /[.!?;]$/.test(trimmed);
+
+        // Check if it contains a verb (basic heuristic)
+        // This is a simple check - could be improved with more sophisticated NLP
+        const commonVerbs = /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
+        const hasVerb = commonVerbs.test(trimmed);
+
+        // Check if it has sentence structure (capital letter at start)
+        const startsWithCapital = /^[A-Z]/.test(trimmed);
+
+        // A text is likely a sentence if:
+        // 1. It has multiple words AND
+        // 2. (It ends with punctuation OR has a verb) AND
+        // 3. Starts with a capital letter (optional but helpful)
+        return words.length >= 2 && (endsWithPunctuation || hasVerb) && (startsWithCapital || endsWithPunctuation || hasVerb);
     }
 
     async callOpenAI(prompt, model, apiKey) {

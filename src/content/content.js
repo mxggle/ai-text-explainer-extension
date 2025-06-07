@@ -217,42 +217,49 @@ class TextExplainer {
             }
 
             const dialog = this.createDialog();
-            const displayText = text.length > 150 ? text.substring(0, 150) + '...' : text;
             const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
+
+            // Parse the explanation to check if it's a sentence or word/phrase
+            const isSentence = this.isSentence(text);
+            const parsedExplanation = this.parseExplanation(explanation, isSentence);
 
             // Extract just the word or phrase for dictionary-style display
             // For very long text, show only the first few words with ellipsis
-            let wordToDefine = text.trim().replace(/['"]/g, '');
-            if (wordToDefine.length > 100) {
-                const words = wordToDefine.split(' ');
+            let displayText = text.trim().replace(/['"]/g, '');
+            if (displayText.length > 100) {
+                const words = displayText.split(' ');
                 if (words.length > 8) {
-                    wordToDefine = words.slice(0, 8).join(' ') + '...';
+                    displayText = words.slice(0, 8).join(' ') + '...';
                 } else {
-                    wordToDefine = wordToDefine.substring(0, 100) + '...';
+                    displayText = displayText.substring(0, 100) + '...';
                 }
             }
+
+            const headerTitle = isSentence ? 'Translation & Explanation' : 'Dictionary';
+            const headerIcon = isSentence ? '🌐' : '📖';
+            const copyButtonText = isSentence ? 'Copy Translation' : 'Copy Definition';
 
             dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
                 <div class="header-content">
-                    <div class="ai-icon">📖</div>
-                    <h3>Dictionary</h3>
+                    <div class="ai-icon">${headerIcon}</div>
+                    <h3>${headerTitle}</h3>
                 </div>
                 <button class="ai-explainer-close-btn">×</button>
             </div>
             <div class="ai-explainer-dialog-content">
                 <div class="dictionary-entry">
                     <div class="word-container">
-                        <div class="dictionary-word">${this.escapeHtml(wordToDefine)}</div>
+                        <div class="dictionary-word">${this.escapeHtml(displayText)}</div>
                         <div class="pronunciation-container">
-                            <button class="pronunciation-btn" id="speak-btn" title="Pronounce word">
+                            <button class="pronunciation-btn" id="speak-btn" title="Pronounce text">
                                 <span class="sound-icon">🔊</span>
                             </button>
                         </div>
                     </div>
                     <div class="definition-section">
                         <div class="definition-content">
-                            ${explanation}
+                            ${parsedExplanation.content}
                         </div>
                     </div>
                 </div>
@@ -270,7 +277,7 @@ class TextExplainer {
                 <div class="dialog-actions">
                     <button class="action-btn copy-btn" id="copy-btn">
                         <span class="btn-icon">📋</span>
-                        Copy Definition
+                        ${copyButtonText}
                     </button>
                     <button class="action-btn settings-btn" id="settings-btn">
                         <span class="btn-icon">⚙️</span>
@@ -287,7 +294,7 @@ class TextExplainer {
         // Add pronunciation button functionality
         const speakBtn = dialog.querySelector('#speak-btn');
         speakBtn.addEventListener('click', () => {
-            this.speakText(wordToDefine);
+            this.speakText(displayText);
         });
 
         // Add context toggle functionality
@@ -321,8 +328,8 @@ class TextExplainer {
         });
         
         copyBtn.addEventListener('click', () => {
-            const definitionText = `${wordToDefine}\n\n${explanation}`;
-            navigator.clipboard.writeText(definitionText).then(() => {
+            const copyText = `${displayText}\n\n${parsedExplanation.rawText}`;
+            navigator.clipboard.writeText(copyText).then(() => {
                 const icon = copyBtn.querySelector('.btn-icon');
                 const originalText = copyBtn.childNodes[2].textContent.trim();
                 icon.textContent = '✓';
@@ -331,7 +338,7 @@ class TextExplainer {
 
                 setTimeout(() => {
                     icon.textContent = '📋';
-                    copyBtn.childNodes[2].textContent = ' Copy Definition';
+                    copyBtn.childNodes[2].textContent = ` ${copyButtonText}`;
                     copyBtn.classList.remove('success');
                 }, 2000);
             });
@@ -435,6 +442,93 @@ class TextExplainer {
         } else {
             // Wait for voices to be loaded
             window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+        }
+    }
+
+    isSentence(text) {
+        const trimmed = text.trim();
+        
+        // Check if it's too short to be a sentence (less than 2 words typically)
+        const words = trimmed.split(/\s+/).filter(word => word.length > 0);
+        if (words.length < 2) {
+            return false;
+        }
+        
+        // Check if it ends with sentence-ending punctuation
+        const endsWithPunctuation = /[.!?;]$/.test(trimmed);
+        
+        // Check if it contains a verb (basic heuristic)
+        const commonVerbs = /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
+        const hasVerb = commonVerbs.test(trimmed);
+        
+        // Check if it has sentence structure (capital letter at start)
+        const startsWithCapital = /^[A-Z]/.test(trimmed);
+        
+        // A text is likely a sentence if:
+        // 1. It has multiple words AND
+        // 2. (It ends with punctuation OR has a verb) AND
+        // 3. Starts with a capital letter (optional but helpful)
+        return words.length >= 2 && (endsWithPunctuation || hasVerb) && (startsWithCapital || endsWithPunctuation || hasVerb);
+    }
+
+    parseExplanation(explanation, isSentence) {
+        if (isSentence) {
+            // Parse sentence explanation format: **Translation:** and **Explanation:**
+            const translationMatch = explanation.match(/\*\*Translation:\*\*\s*(.+?)(?=\*\*Explanation:\*\*|$)/s);
+            const explanationMatch = explanation.match(/\*\*Explanation:\*\*\s*(.+)/s);
+            
+            const translation = translationMatch ? translationMatch[1].trim() : '';
+            const explanationText = explanationMatch ? explanationMatch[1].trim() : explanation;
+            
+            let content = '';
+            if (translation && !translation.toLowerCase().includes('already in')) {
+                content += `<div class="translation-section">
+                    <div class="section-header">🌐 Translation</div>
+                    <div class="section-content">${this.escapeHtml(translation)}</div>
+                </div>`;
+            }
+            
+            content += `<div class="explanation-section">
+                <div class="section-header">💡 Explanation</div>
+                <div class="section-content">${this.escapeHtml(explanationText)}</div>
+            </div>`;
+            
+            return {
+                content: content,
+                rawText: explanation
+            };
+        } else {
+            // Parse word/phrase explanation format: **Definition:** and **In Context:**
+            const definitionMatch = explanation.match(/\*\*Definition:\*\*\s*(.+?)(?=\*\*In Context:\*\*|$)/s);
+            const contextMatch = explanation.match(/\*\*In Context:\*\*\s*(.+)/s);
+            
+            const definition = definitionMatch ? definitionMatch[1].trim() : '';
+            const contextExplanation = contextMatch ? contextMatch[1].trim() : explanation;
+            
+            let content = '';
+            if (definition) {
+                content += `<div class="definition-section">
+                    <div class="section-header">📖 Definition</div>
+                    <div class="section-content">${this.escapeHtml(definition)}</div>
+                </div>`;
+            }
+            
+            if (contextExplanation && contextExplanation !== definition) {
+                content += `<div class="context-explanation-section">
+                    <div class="section-header">💭 In Context</div>
+                    <div class="section-content">${this.escapeHtml(contextExplanation)}</div>
+                </div>`;
+            }
+            
+            // If parsing failed, just show the raw explanation
+            if (!content) {
+                content = `<div class="section-content">${this.escapeHtml(explanation)}</div>`;
+            }
+            
+            return {
+                content: content,
+                rawText: explanation
+            };
         }
     }
 

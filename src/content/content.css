@@ -264,6 +264,41 @@
 }
 
 
+/* Section Headers for parsed explanations */
+
+.section-header {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8b7355 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 4px !important;
+    border-bottom: 1px solid #e7e2db !important;
+}
+
+.section-content {
+    font-size: 12px !important;
+    color: #2d2a26 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 12px !important;
+}
+
+.translation-section,
+.explanation-section,
+.definition-section,
+.context-explanation-section {
+    margin-bottom: 16px !important;
+}
+
+.translation-section:last-child,
+.explanation-section:last-child,
+.definition-section:last-child,
+.context-explanation-section:last-child {
+    margin-bottom: 0 !important;
+}
+
+
 /* Context Section - Foldable */
 
 .context-section {
@@ -685,6 +720,13 @@
     .ai-explainer-dialog[data-theme="auto"] .definition-content {
         color: #e5e1db !important;
     }
+    .ai-explainer-dialog[data-theme="auto"] .section-header {
+        color: #a3957c !important;
+        border-bottom-color: #3f3a33 !important;
+    }
+    .ai-explainer-dialog[data-theme="auto"] .section-content {
+        color: #e5e1db !important;
+    }
     .ai-explainer-dialog[data-theme="auto"] .loading-spinner {
         border-color: #3f3a33 !important;
         border-top-color: #a19891 !important;
@@ -795,6 +837,15 @@
 }
 
 .ai-explainer-dialog[data-theme="dark"] .definition-content {
+    color: #e5e1db !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .section-header {
+    color: #a3957c !important;
+    border-bottom-color: #3f3a33 !important;
+}
+
+.ai-explainer-dialog[data-theme="dark"] .section-content {
     color: #e5e1db !important;
 }
 
