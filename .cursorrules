@@ -1,0 +1,37 @@
+# Cursor Rules for AI Text Explainer Extension
+
+## CRITICAL: Auto-Formatting Rules
+
+**NEVER auto-format optional chaining syntax with spaces!**
+
+-   CORRECT: `obj?.prop?.method?.()`
+-   INCORRECT: `obj ? .prop ? .method ? .()`
+-   The `?.` operator must ALWAYS be written without spaces
+
+## JavaScript/TypeScript Formatting Rules
+
+-   Use proper optional chaining syntax without spaces: `obj?.prop` not `obj ? .prop`
+-   Maintain consistent indentation (4 spaces as per .editorconfig)
+-   Keep optional chaining operators attached to their preceding tokens
+-   Use modern JavaScript ES2020+ syntax
+-   Follow standard JavaScript formatting conventions
+-   Disable built-in JavaScript formatter in favor of Prettier + ESLint
+
+## Code Quality Guidelines
+
+-   Always use proper optional chaining: `obj?.method?.()`
+-   Avoid breaking optional chaining across multiple tokens
+-   Use consistent error handling patterns
+-   Maintain clear variable naming conventions
+
+## Auto-Format Prevention
+
+-   Use Prettier with proper configuration
+-   Disable JavaScript built-in formatter
+-   Use ESLint for syntax checking
+-   **DO NOT let any formatter add spaces to optional chaining operators**
+
+## Specific Fixes
+
+-   Fix `parsed.choices ? .[0] ? .delta ? .content` to `parsed.choices?.[0]?.delta?.content`
+-   Ensure all optional chaining operators are properly formatted without spaces

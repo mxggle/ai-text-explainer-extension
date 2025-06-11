@@ -28,14 +28,14 @@ class TextExplainer {
 
     setupEventListeners() {
         // Handle text selection
-        document.addEventListener('mouseup', e => this.handleTextSelection(e));
-        document.addEventListener('keyup', e => this.handleKeyboardSelection(e));
+        document.addEventListener('mouseup', (e) => this.handleTextSelection(e));
+        document.addEventListener('keyup', (e) => this.handleKeyboardSelection(e));
 
         // Handle clicks outside dialog to close it
-        document.addEventListener('click', e => this.handleOutsideClick(e));
+        document.addEventListener('click', (e) => this.handleOutsideClick(e));
 
         // Handle escape key to close dialog
-        document.addEventListener('keydown', e => {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.currentDialog) {
                 this.closeDialog();
             }
@@ -85,7 +85,9 @@ class TextExplainer {
             const container = range.commonAncestorContainer;
 
             // Find the closest paragraph or meaningful container
-            let contextElement = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+            let contextElement = container.nodeType === Node.TEXT_NODE ?
+                container.parentElement :
+                container;
 
             // Walk up to find a good context container
             while (contextElement && !this.isGoodContextContainer(contextElement)) {
@@ -95,7 +97,9 @@ class TextExplainer {
             if (contextElement) {
                 const contextText = contextElement.textContent || contextElement.innerText;
                 // Return up to 1000 characters of context
-                return contextText.length > 1000 ? contextText.substring(0, 1000) + '...' : contextText;
+                return contextText.length > 1000 ?
+                    contextText.substring(0, 1000) + '...' :
+                    contextText;
             }
 
             return this.selectedText; // Fallback to selected text
@@ -107,12 +111,10 @@ class TextExplainer {
 
     isGoodContextContainer(element) {
         const goodTags = ['P', 'DIV', 'ARTICLE', 'SECTION', 'BLOCKQUOTE', 'LI', 'TD', 'TH'];
-        return (
-            goodTags.includes(element.tagName) ||
+        return goodTags.includes(element.tagName) ||
             element.classList.contains('content') ||
             element.classList.contains('text') ||
-            element.classList.contains('paragraph')
-        );
+            element.classList.contains('paragraph');
     }
 
     showFloatingButton(x, y) {
@@ -124,10 +126,10 @@ class TextExplainer {
         button.className = 'ai-explainer-floating-button';
 
         // Position the button near the selection
-        button.style.left = x + 10 + 'px';
-        button.style.top = y - 40 + 'px';
+        button.style.left = (x + 10) + 'px';
+        button.style.top = (y - 40) + 'px';
 
-        button.addEventListener('click', e => {
+        button.addEventListener('click', (e) => {
             e.stopPropagation();
             this.explainText(this.selectedText);
             this.hideFloatingButton();
@@ -222,36 +224,36 @@ class TextExplainer {
     }
 
     showExplanationDialog(text, explanation, grammarAnalysis = null, isSentence = false) {
-        if (this.currentDialog) {
-            this.currentDialog.remove();
-        }
-
-        const dialog = this.createDialog();
-        const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
-
-        // Parse the explanation to check if it's a sentence or word/phrase
-        const parsedExplanation = this.parseExplanation(explanation, isSentence);
-
-        // Extract just the word or phrase for dictionary-style display
-        // For very long text, show only the first few words with ellipsis
-        let displayText = text.trim().replace(/['"]/g, '');
-        if (displayText.length > 100) {
-            const words = displayText.split(' ');
-            if (words.length > 8) {
-                displayText = words.slice(0, 8).join(' ') + '...';
-            } else {
-                displayText = displayText.substring(0, 100) + '...';
+            if (this.currentDialog) {
+                this.currentDialog.remove();
             }
-        }
 
-        const headerTitle = isSentence ? 'Translation & Explanation' : 'Dictionary';
-        const headerIcon = isSentence ? '🌐' : '📖';
-        const copyButtonText = isSentence ? 'Copy Translation' : 'Copy Definition';
+            const dialog = this.createDialog();
+            const contextText = this.selectedContext && this.selectedContext !== text ? this.selectedContext : '';
 
-        // Create tabs - show Grammar tab for all sentences (even if analysis failed)
-        const showGrammarTab = isSentence;
+            // Parse the explanation to check if it's a sentence or word/phrase
+            const parsedExplanation = this.parseExplanation(explanation, isSentence);
 
-        dialog.innerHTML = `
+            // Extract just the word or phrase for dictionary-style display
+            // For very long text, show only the first few words with ellipsis
+            let displayText = text.trim().replace(/['"]/g, '');
+            if (displayText.length > 100) {
+                const words = displayText.split(' ');
+                if (words.length > 8) {
+                    displayText = words.slice(0, 8).join(' ') + '...';
+                } else {
+                    displayText = displayText.substring(0, 100) + '...';
+                }
+            }
+
+            const headerTitle = isSentence ? 'Translation & Explanation' : 'Dictionary';
+            const headerIcon = isSentence ? '🌐' : '📖';
+            const copyButtonText = isSentence ? 'Copy Translation' : 'Copy Definition';
+
+            // Create tabs - show Grammar tab for all sentences (even if analysis failed)
+            const showGrammarTab = isSentence;
+
+            dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
                 <div class="header-content">
                     <div class="ai-icon">${headerIcon}</div>
@@ -269,10 +271,8 @@ class TextExplainer {
                             </button>
                         </div>
                     </div>
-
-                    ${
-                        showGrammarTab
-                            ? `
+                    
+                    ${showGrammarTab ? `
                         <div class="tabs-container">
                             <div class="tabs-header">
                                 <button class="tab-btn active" data-tab="definition">Definition</button>
@@ -288,28 +288,20 @@ class TextExplainer {
                                 </div>
                                 <div class="tab-panel" id="grammar-panel">
                                     <div class="grammar-analysis">
-                                        ${
-                                            grammarAnalysis
-                                                ? this.parseMarkdown(grammarAnalysis)
-                                                : '<div class="loading-content"><div class="loading-spinner"></div><div class="loading-text">Analyzing grammar...</div></div>'
-                                        }
+                                        ${grammarAnalysis ? this.parseMarkdown(grammarAnalysis) : '<div class="loading-content"><div class="loading-spinner"></div><div class="loading-text">Analyzing grammar...</div></div>'}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    `
-                            : `
+                    ` : `
                         <div class="definition-section">
                             <div class="definition-content">
                                 ${parsedExplanation.content}
                             </div>
                         </div>
-                    `
-                    }
+                    `}
                 </div>
-                ${
-                    contextText
-                        ? `
+                ${contextText ? `
                     <div class="context-section">
                         <div class="context-header" id="context-header">
                             <div class="context-header-title">📄 Context</div>
@@ -319,9 +311,7 @@ class TextExplainer {
                             <div class="context-full-text">${this.escapeHtml(contextText)}</div>
                         </div>
                     </div>
-                `
-                        : ''
-                }
+                ` : ''}
                 <div class="dialog-actions">
                     <button class="action-btn copy-btn" id="copy-btn">
                         <span class="btn-icon">📋</span>
@@ -350,27 +340,27 @@ class TextExplainer {
             const tabBtns = dialog.querySelectorAll('.tab-btn');
             const tabPanels = dialog.querySelectorAll('.tab-panel');
             let grammarLoaded = false;
-
+            
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const tabName = btn.getAttribute('data-tab');
-
+                    
                     // Remove active class from all tabs and panels
                     tabBtns.forEach(b => b.classList.remove('active'));
                     tabPanels.forEach(p => p.classList.remove('active'));
-
+                    
                     // Add active class to clicked tab and corresponding panel
                     btn.classList.add('active');
                     const panel = dialog.querySelector(`#${tabName}-panel`);
                     if (panel) {
                         panel.classList.add('active');
                     }
-
+                    
                     // Lazy load grammar analysis when Grammar tab is clicked
                     if (tabName === 'grammar' && !grammarLoaded) {
                         grammarLoaded = true;
                         const grammarContent = panel.querySelector('.grammar-analysis');
-
+                        
                         try {
                             console.log('Requesting grammar analysis for:', text);
                             const grammarResponse = await chrome.runtime.sendMessage({
@@ -380,7 +370,7 @@ class TextExplainer {
                                 settings: this.settings
                             });
                             console.log('Grammar response:', grammarResponse);
-
+                            
                             if (grammarResponse.success) {
                                 grammarContent.innerHTML = this.parseMarkdown(grammarResponse.analysis);
                                 console.log('Grammar analysis received and displayed');
@@ -432,17 +422,17 @@ class TextExplainer {
             });
             this.closeDialog();
         });
-
+        
         copyBtn.addEventListener('click', () => {
             const activePanel = dialog.querySelector('.tab-panel.active');
             let copyText = `${displayText}\n\n`;
-
+            
             if (activePanel && activePanel.id === 'grammar-panel' && grammarAnalysis) {
                 copyText += `Grammar Analysis:\n${grammarAnalysis}`;
             } else {
                 copyText += parsedExplanation.rawText;
             }
-
+            
             navigator.clipboard.writeText(copyText).then(() => {
                 const icon = copyBtn.querySelector('.btn-icon');
                 const originalText = copyBtn.childNodes[2].textContent.trim();
@@ -520,36 +510,36 @@ class TextExplainer {
     speakText(text) {
         // Stop any ongoing speech
         window.speechSynthesis.cancel();
-
+        
         // Create a new utterance
         const utterance = new SpeechSynthesisUtterance(text);
-
+        
         // Set default properties
-        utterance.rate = 1.0; // Normal speed
+        utterance.rate = 1.0;  // Normal speed
         utterance.pitch = 1.0; // Normal pitch
         utterance.volume = 1.0; // Full volume
-
+        
         // Function to set voice and speak
         const setVoiceAndSpeak = () => {
             const voices = window.speechSynthesis.getVoices();
-
+            
             // Try to find a good English voice
             let voice = voices.find(voice => voice.lang.includes('en') && voice.name.includes('Google'));
-
+            
             // If no Google voice found, use the first English voice
             if (!voice) {
                 voice = voices.find(voice => voice.lang.includes('en'));
             }
-
+            
             // If an English voice is found, use it
             if (voice) {
                 utterance.voice = voice;
             }
-
+            
             // Speak the text
             window.speechSynthesis.speak(utterance);
         };
-
+        
         // Check if voices are already loaded
         if (window.speechSynthesis.getVoices().length > 0) {
             setVoiceAndSpeak();
@@ -561,63 +551,58 @@ class TextExplainer {
 
     isSentence(text) {
         const trimmed = text.trim();
-
+        
         // Handle very short text
         if (trimmed.length < 3) {
             return false;
         }
-
+        
         // Check for Japanese/Chinese characters - these often form sentences without spaces
         const hasAsianChars = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf\uac00-\ud7af]/.test(trimmed);
-
+        
         if (hasAsianChars) {
             // For Asian languages, check for sentence-ending patterns
             const asianSentenceEnders = /[。！？；だよねますでしたですが]$/.test(trimmed);
             const hasLength = trimmed.length >= 5; // Reasonable sentence length
             return hasLength && (asianSentenceEnders || trimmed.length >= 10);
         }
-
+        
         // For Latin-script languages, use the original logic
         const words = trimmed.split(/\s+/).filter(word => word.length > 0);
         if (words.length < 2) {
             return false;
         }
-
+        
         // Check if it ends with sentence-ending punctuation
         const endsWithPunctuation = /[.!?;]$/.test(trimmed);
-
+        
         // Check if it contains a verb (basic heuristic)
-        const commonVerbs =
-            /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
+        const commonVerbs = /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
         const hasVerb = commonVerbs.test(trimmed);
-
+        
         // Check if it has sentence structure (capital letter at start)
         const startsWithCapital = /^[A-Z]/.test(trimmed);
-
+        
         // A text is likely a sentence if:
         // 1. It has multiple words AND
         // 2. (It ends with punctuation OR has a verb) AND
         // 3. Starts with a capital letter (optional but helpful)
-        return (
-            words.length >= 2 &&
-            (endsWithPunctuation || hasVerb) &&
-            (startsWithCapital || endsWithPunctuation || hasVerb)
-        );
+        return words.length >= 2 && (endsWithPunctuation || hasVerb) && (startsWithCapital || endsWithPunctuation || hasVerb);
     }
 
     parseExplanation(explanation, isSentence) {
         // First, try to detect which format we have regardless of isSentence flag
         const hasTranslation = /\*\*Translation:\*\*/.test(explanation);
         const hasDefinition = /\*\*Definition:\*\*/.test(explanation);
-
+        
         if (hasTranslation || (isSentence && !hasDefinition)) {
             // Parse sentence explanation format: **Translation:** and **Explanation:**
             const translationMatch = explanation.match(/\*\*Translation:\*\*\s*(.+?)(?=\*\*Explanation:\*\*|$)/s);
             const explanationMatch = explanation.match(/\*\*Explanation:\*\*\s*(.+)/s);
-
+            
             const translation = translationMatch ? translationMatch[1].trim() : '';
             const explanationText = explanationMatch ? explanationMatch[1].trim() : explanation;
-
+            
             let content = '';
             if (translation && !translation.toLowerCase().includes('already in')) {
                 content += `<div class="translation-section">
@@ -625,12 +610,12 @@ class TextExplainer {
                     <div class="section-content">${this.escapeHtml(translation)}</div>
                 </div>`;
             }
-
+            
             content += `<div class="explanation-section">
                 <div class="section-header">💡 Explanation</div>
                 <div class="section-content">${this.escapeHtml(explanationText)}</div>
             </div>`;
-
+            
             return {
                 content: content,
                 rawText: explanation
@@ -639,10 +624,10 @@ class TextExplainer {
             // Parse word/phrase explanation format: **Definition:** and **In Context:**
             const definitionMatch = explanation.match(/\*\*Definition:\*\*\s*(.+?)(?=\*\*In Context:\*\*|$)/s);
             const contextMatch = explanation.match(/\*\*In Context:\*\*\s*(.+)/s);
-
+            
             const definition = definitionMatch ? definitionMatch[1].trim() : '';
             const contextExplanation = contextMatch ? contextMatch[1].trim() : '';
-
+            
             let content = '';
             if (definition) {
                 content += `<div class="definition-section">
@@ -650,14 +635,14 @@ class TextExplainer {
                     <div class="section-content">${this.escapeHtml(definition)}</div>
                 </div>`;
             }
-
+            
             if (contextExplanation && contextExplanation !== definition) {
                 content += `<div class="context-explanation-section">
                     <div class="section-header">💭 In Context</div>
                     <div class="section-content">${this.escapeHtml(contextExplanation)}</div>
                 </div>`;
             }
-
+            
             // If parsing failed, clean up the markdown formatting and show as plain content
             if (!content) {
                 // Remove markdown formatting from the explanation
@@ -667,10 +652,10 @@ class TextExplainer {
                     .replace(/\*\*Translation:\*\*/g, '')
                     .replace(/\*\*Explanation:\*\*/g, '')
                     .trim();
-
+                
                 content = `<div class="section-content">${this.escapeHtml(cleanedExplanation)}</div>`;
             }
-
+            
             return {
                 content: content,
                 rawText: explanation
@@ -680,99 +665,38 @@ class TextExplainer {
 
     parseMarkdown(text) {
         if (!text) return '';
-
+        
         let html = this.escapeHtml(text);
-
+        
         // Convert markdown headers (### -> h4, #### -> h5)
         html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
         html = html.replace(/^#### (.+)$/gm, '<h5>$1</h5>');
-
+        
         // Convert bold text (**text** -> <strong>text</strong>)
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
+        
         // Convert bullet points (- item -> <li>item</li>)
         html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-
+        
         // Wrap consecutive <li> items in <ul>
-        html = html.replace(/(<li>.*<\/li>)(\n<li>.*<\/li>)*/g, function (match) {
+        html = html.replace(/(<li>.*<\/li>)(\n<li>.*<\/li>)*/g, function(match) {
             return '<ul>' + match.replace(/\n/g, '') + '</ul>';
         });
-
-        // Convert markdown tables
-        html = this.parseMarkdownTables(html);
-
+        
         // Convert line breaks to <br> but preserve paragraph structure
         html = html.replace(/\n\n/g, '</p><p>');
         html = html.replace(/\n/g, '<br>');
-
+        
         // Wrap in paragraph tags if not already wrapped
         if (!html.startsWith('<') || html.includes('<br>')) {
             html = '<p>' + html + '</p>';
         }
-
+        
         // Clean up empty paragraphs
         html = html.replace(/<p><\/p>/g, '');
         html = html.replace(/<p><br><\/p>/g, '');
-
+        
         return html;
-    }
-
-    parseMarkdownTables(html) {
-        // Find and convert markdown tables
-        const tableRegex = /(\|[^\n]*\|\n(\|[-:| ]*\|\n)?(\|[^\n]*\|\n?)*)/g;
-
-        return html.replace(tableRegex, match => {
-            const lines = match.trim().split('\n');
-            if (lines.length < 2) return match;
-
-            let tableHtml = '<table class="markdown-table">';
-            let headerProcessed = false;
-            let separatorFound = false;
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line.startsWith('|') || !line.endsWith('|')) continue;
-
-                // Check if this is a separator row (contains only |, -, :, and spaces)
-                if (/^\|[\s\-:]+\|$/.test(line)) {
-                    separatorFound = true;
-                    continue;
-                }
-
-                // Split by | and clean up cells
-                const cells = line
-                    .slice(1, -1)
-                    .split('|')
-                    .map(cell => cell.trim());
-
-                if (!headerProcessed && !separatorFound) {
-                    // This is likely a header row
-                    tableHtml += '<thead><tr>';
-                    cells.forEach(cell => {
-                        tableHtml += `<th>${cell}</th>`;
-                    });
-                    tableHtml += '</tr></thead>';
-                    headerProcessed = true;
-                } else {
-                    // This is a data row
-                    if (!tableHtml.includes('<tbody>')) {
-                        tableHtml += '<tbody>';
-                    }
-                    tableHtml += '<tr>';
-                    cells.forEach(cell => {
-                        tableHtml += `<td>${cell}</td>`;
-                    });
-                    tableHtml += '</tr>';
-                }
-            }
-
-            if (tableHtml.includes('<tbody>')) {
-                tableHtml += '</tbody>';
-            }
-            tableHtml += '</table>';
-
-            return tableHtml;
-        });
     }
 
     closeDialog() {
@@ -839,10 +763,8 @@ class TextExplainer {
                             </button>
                         </div>
                     </div>
-
-                    ${
-                        showGrammarTab
-                            ? `
+                    
+                    ${showGrammarTab ? `
                         <div class="tabs-container">
                             <div class="tabs-header">
                                 <button class="tab-btn active" data-tab="definition">Definition</button>
@@ -854,7 +776,7 @@ class TextExplainer {
                                         <div class="definition-content">
                                             <div class="streaming-content" id="streaming-content">
                                                 <div class="streaming-placeholder">
-                                                    <div class="streaming-cursor"></div>
+                                                    <div class="streaming-cursor">|</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -870,23 +792,19 @@ class TextExplainer {
                                 </div>
                             </div>
                         </div>
-                    `
-                            : `
+                    ` : `
                         <div class="definition-section">
                             <div class="definition-content">
                                 <div class="streaming-content" id="streaming-content">
                                     <div class="streaming-placeholder">
-                                        <div class="streaming-cursor"></div>
+                                        <div class="streaming-cursor">|</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    `
-                    }
+                    `}
                 </div>
-                ${
-                    contextText
-                        ? `
+                ${contextText ? `
                     <div class="context-section">
                         <div class="context-header" id="context-header">
                             <div class="context-header-title">📄 Context</div>
@@ -896,9 +814,7 @@ class TextExplainer {
                             <div class="context-full-text">${this.escapeHtml(contextText)}</div>
                         </div>
                     </div>
-                `
-                        : ''
-                }
+                ` : ''}
                 <div class="dialog-actions">
                     <button class="action-btn copy-btn" id="copy-btn">
                         <span class="btn-icon">📋</span>
@@ -943,30 +859,30 @@ class TextExplainer {
         if (showGrammarTab) {
             const tabBtns = dialog.querySelectorAll('.tab-btn');
             const tabPanels = dialog.querySelectorAll('.tab-panel');
-
+            
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const tabName = btn.getAttribute('data-tab');
-
+                    
                     // Remove active class from all tabs and panels
                     tabBtns.forEach(b => b.classList.remove('active'));
                     tabPanels.forEach(p => p.classList.remove('active'));
-
+                    
                     // Add active class to clicked tab and corresponding panel
                     btn.classList.add('active');
                     const panel = dialog.querySelector(`#${tabName}-panel`);
                     if (panel) {
                         panel.classList.add('active');
                     }
-
+                    
                     // Lazy load grammar analysis when Grammar tab is clicked
                     if (tabName === 'grammar' && !this.currentDialogState.grammarLoaded) {
                         this.currentDialogState.grammarLoaded = true;
                         const grammarContent = panel.querySelector('.grammar-analysis');
-
+                        
                         try {
                             console.log('Requesting streaming grammar analysis for:', this.currentDialogState.text);
-
+                            
                             // Start streaming grammar analysis
                             const response = await chrome.runtime.sendMessage({
                                 action: 'analyze-grammar-stream',
@@ -979,7 +895,7 @@ class TextExplainer {
                                 grammarContent.innerHTML = `
                                     <div class="streaming-content" id="grammar-streaming-content">
                                         <div class="streaming-placeholder">
-                                            <div class="streaming-cursor"></div>
+                                            <div class="streaming-cursor">|</div>
                                         </div>
                                     </div>
                                 `;
@@ -1024,10 +940,10 @@ class TextExplainer {
             });
             this.closeDialog();
         });
-
+        
         copyBtn.addEventListener('click', () => {
             const copyText = `${displayText}\n\n${this.currentDialogState.streamingContent}`;
-
+            
             navigator.clipboard.writeText(copyText).then(() => {
                 const icon = copyBtn.querySelector('.btn-icon');
                 const originalText = copyBtn.childNodes[2].textContent.trim();
@@ -1045,50 +961,24 @@ class TextExplainer {
     }
 
     handleStreamChunk(request) {
-        console.log(`Received ${request.type} chunk:`, request.chunk);
-
-        if (!this.currentDialog || !this.currentDialogState) {
-            console.log('No dialog or dialog state available');
+        if (!this.currentDialog || !this.currentDialogState || !this.currentDialogState.isStreaming) {
             return;
         }
 
+        this.currentDialogState.streamingContent += request.chunk;
+
         // Update the appropriate streaming content area
         let contentElement;
-        let streamingContent = '';
-
         if (request.type === 'explain') {
-            // Only update for explanation if still streaming
-            if (!this.currentDialogState.isStreaming) {
-                console.log('Explanation not streaming, ignoring chunk');
-                return;
-            }
-
-            this.currentDialogState.streamingContent += request.chunk;
             contentElement = this.currentDialog.querySelector('#streaming-content');
-            streamingContent = this.currentDialogState.streamingContent;
-            console.log('Updated explanation content, total length:', streamingContent.length);
         } else if (request.type === 'grammar') {
-            // Handle grammar streaming separately
-            if (!this.currentDialogState.grammarStreamingContent) {
-                this.currentDialogState.grammarStreamingContent = '';
-            }
-            this.currentDialogState.grammarStreamingContent += request.chunk;
             contentElement = this.currentDialog.querySelector('#grammar-streaming-content');
-            streamingContent = this.currentDialogState.grammarStreamingContent;
-            console.log('Updated grammar content, total length:', streamingContent.length);
         }
 
         if (contentElement) {
             // Parse and display the streamed content
-            const parsedContent = this.parseStreamingContent(
-                streamingContent,
-                this.currentDialogState.isSentence,
-                request.type
-            );
-            contentElement.innerHTML = parsedContent + '<div class="streaming-cursor"></div>';
-            console.log('Updated content element for', request.type);
-        } else {
-            console.log('Content element not found for type:', request.type);
+            const parsedContent = this.parseStreamingContent(this.currentDialogState.streamingContent, this.currentDialogState.isSentence);
+            contentElement.innerHTML = parsedContent + '<div class="streaming-cursor">|</div>';
         }
     }
 
@@ -1113,10 +1003,8 @@ class TextExplainer {
                 contentElement.innerHTML = parsedExplanation.content;
                 this.currentDialogState.streamingContent = request.result;
             } else if (request.type === 'grammar') {
-                // Display final grammar analysis with consistent formatting
-                const parsedContent = this.parseStreamingContent(request.result, false, request.type);
-                contentElement.innerHTML = parsedContent;
-                this.currentDialogState.grammarStreamingContent = request.result;
+                // Display final grammar analysis
+                contentElement.innerHTML = this.parseMarkdown(request.result);
             }
         }
     }
@@ -1136,112 +1024,23 @@ class TextExplainer {
 
         if (contentElement) {
             contentElement.innerHTML = `<div class="error-content">
-                <div class="error-message">Failed to ${
-                    request.type === 'explain' ? 'get explanation' : 'analyze grammar'
-                }</div>
+                <div class="error-message">Failed to ${request.type === 'explain' ? 'get explanation' : 'analyze grammar'}</div>
                 <div class="error-hint">${request.error}</div>
             </div>`;
         }
     }
 
-    parseStreamingContent(content, isSentence, type) {
-        // Use the same structured parsing as the final version for consistency
-        // This ensures streaming and final content have the same styling
-
-        // Handle grammar analysis content
-        if (type === 'grammar') {
-            // Grammar analysis content should be parsed as markdown
-            return this.parseMarkdown(content);
-        }
-
-        // Handle explanation content
-        // First, try to detect which format we have regardless of isSentence flag
-        const hasTranslation = /\*\*Translation:\*\*/.test(content);
-        const hasDefinition = /\*\*Definition:\*\*/.test(content);
-
-        if (hasTranslation || (isSentence && !hasDefinition)) {
-            // Parse sentence explanation format: **Translation:** and **Explanation:**
-            const translationMatch = content.match(/\*\*Translation:\*\*\s*(.+?)(?=\*\*Explanation:\*\*|$)/s);
-            const explanationMatch = content.match(/\*\*Explanation:\*\*\s*(.+)/s);
-
-            const translation = translationMatch ? translationMatch[1].trim() : '';
-            const explanationText = explanationMatch ? explanationMatch[1].trim() : '';
-
-            let html = '';
-            if (translation && !translation.toLowerCase().includes('already in')) {
-                html += `<div class="translation-section">
-                    <div class="section-header">🌐 Translation</div>
-                    <div class="section-content">${this.escapeHtml(translation)}</div>
-                </div>`;
-            }
-
-            if (explanationText) {
-                html += `<div class="explanation-section">
-                    <div class="section-header">💡 Explanation</div>
-                    <div class="section-content">${this.escapeHtml(explanationText)}</div>
-                </div>`;
-            }
-
-            // If we have partial content, show what we have so far
-            if (!html && content.trim()) {
-                // Remove any markdown headers and show as plain content
-                let cleanedContent = content
-                    .replace(/\*\*Translation:\*\*/g, '')
-                    .replace(/\*\*Explanation:\*\*/g, '')
-                    .trim();
-
-                if (cleanedContent) {
-                    // Escape HTML first, then convert markdown patterns
-                    cleanedContent = this.escapeHtml(cleanedContent);
-                    cleanedContent = cleanedContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                    cleanedContent = cleanedContent.replace(/\n/g, '<br>');
-                    html = `<div class="section-content">${cleanedContent}</div>`;
-                }
-            }
-
-            return html;
-        } else {
-            // Parse word/phrase explanation format: **Definition:** and **In Context:**
-            const definitionMatch = content.match(/\*\*Definition:\*\*\s*(.+?)(?=\*\*In Context:\*\*|$)/s);
-            const contextMatch = content.match(/\*\*In Context:\*\*\s*(.+)/s);
-
-            const definition = definitionMatch ? definitionMatch[1].trim() : '';
-            const contextExplanation = contextMatch ? contextMatch[1].trim() : '';
-
-            let html = '';
-            if (definition) {
-                html += `<div class="definition-section">
-                    <div class="section-header">📖 Definition</div>
-                    <div class="section-content">${this.escapeHtml(definition)}</div>
-                </div>`;
-            }
-
-            if (contextExplanation && contextExplanation !== definition) {
-                html += `<div class="context-explanation-section">
-                    <div class="section-header">💭 In Context</div>
-                    <div class="section-content">${this.escapeHtml(contextExplanation)}</div>
-                </div>`;
-            }
-
-            // If parsing failed or we have partial content, show as plain content
-            if (!html && content.trim()) {
-                // Remove markdown formatting and show cleaned content
-                let cleanedContent = content
-                    .replace(/\*\*Definition:\*\*/g, '')
-                    .replace(/\*\*In Context:\*\*/g, '')
-                    .trim();
-
-                if (cleanedContent) {
-                    // Escape HTML first, then convert markdown patterns
-                    cleanedContent = this.escapeHtml(cleanedContent);
-                    cleanedContent = cleanedContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                    cleanedContent = cleanedContent.replace(/\n/g, '<br>');
-                    html = `<div class="section-content">${cleanedContent}</div>`;
-                }
-            }
-
-            return html;
-        }
+    parseStreamingContent(content, isSentence) {
+        // Simple parsing for streaming content - just escape HTML and format basic patterns
+        let html = this.escapeHtml(content);
+        
+        // Convert basic markdown patterns
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        
+        // Add line breaks for better readability
+        html = html.replace(/\n/g, '<br>');
+        
+        return html;
     }
 }
 

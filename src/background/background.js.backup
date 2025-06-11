@@ -68,7 +68,7 @@ class AIService {
     async explainText(selectedText, context, settings) {
         const provider = settings.provider || 'openai';
         const model = settings.model || this.providers[provider].models[0];
-        const apiKey = settings.apiKeys ? .[provider];
+        const apiKey = settings.apiKeys?.[provider];
 
         if (!apiKey) {
             throw new Error(`API key not found for ${provider}. Please configure it in settings.`);

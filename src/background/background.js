@@ -64,7 +64,16 @@ class AIService {
             },
             xai: {
                 name: 'xAI',
-                models: ['grok-3-beta', 'grok-3-fast-beta', 'grok-3-mini-beta', 'grok-3-mini-fast-beta', 'grok-beta', 'grok-vision-beta', 'grok-vision-2', 'grok-2'],
+                models: [
+                    'grok-3-beta',
+                    'grok-3-fast-beta',
+                    'grok-3-mini-beta',
+                    'grok-3-mini-fast-beta',
+                    'grok-beta',
+                    'grok-vision-beta',
+                    'grok-vision-2',
+                    'grok-2'
+                ],
                 endpoint: 'https://api.x.ai/v1/chat/completions'
             }
         };
@@ -151,6 +160,123 @@ Provide only the definition and contextual explanation, no additional formatting
         }
     }
 
+    buildGrammarAnalysisPrompt(selectedText, context, settings) {
+        const language = settings.language || 'English';
+
+        return `You are a grammar expert. Analyze the grammatical structure of the given sentence and provide a clear, educational breakdown.
+
+Sentence: "${selectedText}"
+
+Context: "${context}"
+
+Instructions:
+1. Identify the main grammatical components (subject, verb, object, etc.)
+2. Break down the sentence structure step by step
+3. Identify any special grammatical patterns, clauses, or constructions
+4. Explain verb tenses, voice (active/passive), and mood if relevant
+5. Point out any interesting grammatical features
+6. Use ${language} language for explanations
+7. Format as a structured analysis that's easy to understand
+
+Provide a clear grammatical breakdown with labeled components and explanations.`;
+    }
+
+    async analyzeGrammar(selectedText, context, settings) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildGrammarAnalysisPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAI(prompt, model, apiKey);
+            case 'anthropic':
+                return await this.callAnthropic(prompt, model, apiKey);
+            case 'gemini':
+                return await this.callGemini(prompt, model, apiKey);
+            case 'xai':
+                return await this.callXAI(prompt, model, apiKey);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
+    async explainTextStream(selectedText, context, settings, onChunk) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildExplanationPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAIStream(prompt, model, apiKey, onChunk);
+            case 'anthropic':
+                // Fallback to non-streaming for other providers
+                return await this.simulateStreamingResponse(await this.callAnthropic(prompt, model, apiKey), onChunk);
+            case 'gemini':
+                return await this.simulateStreamingResponse(await this.callGemini(prompt, model, apiKey), onChunk);
+            case 'xai':
+                return await this.simulateStreamingResponse(await this.callXAI(prompt, model, apiKey), onChunk);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
+    async analyzeGrammarStream(selectedText, context, settings, onChunk) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildGrammarAnalysisPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAIStream(prompt, model, apiKey, onChunk);
+            case 'anthropic':
+                return await this.simulateStreamingResponse(await this.callAnthropic(prompt, model, apiKey), onChunk);
+            case 'gemini':
+                return await this.simulateStreamingResponse(await this.callGemini(prompt, model, apiKey), onChunk);
+            case 'xai':
+                return await this.simulateStreamingResponse(await this.callXAI(prompt, model, apiKey), onChunk);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
+    async simulateStreamingResponse(fullResponse, onChunk) {
+        // Simulate streaming for providers that don't support it
+        console.log('Simulating streaming for response length:', fullResponse.length);
+        const words = fullResponse.split(/(\s+)/); // Keep whitespace in the split
+
+        for (let i = 0; i < words.length; i++) {
+            const chunk = words[i];
+            if (chunk.trim()) {
+                // Only log non-whitespace chunks
+                console.log('Sending word chunk:', chunk);
+            }
+            onChunk(chunk);
+            // Delay to make streaming visible but not too slow
+            await new Promise(resolve => setTimeout(resolve, 80));
+        }
+
+        console.log('Streaming simulation complete');
+        return fullResponse;
+    }
+
     isSentence(text) {
         const trimmed = text.trim();
 
@@ -165,7 +291,8 @@ Provide only the definition and contextual explanation, no additional formatting
 
         // Check if it contains a verb (basic heuristic)
         // This is a simple check - could be improved with more sophisticated NLP
-        const commonVerbs = /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
+        const commonVerbs =
+            /\b(is|are|was|were|have|has|had|do|does|did|will|would|could|should|can|may|might|must|shall|am|be|been|being|go|goes|went|come|comes|came|get|gets|got|make|makes|made|take|takes|took|see|sees|saw|know|knows|knew|think|thinks|thought|say|says|said|tell|tells|told|give|gives|gave|find|finds|found|feel|feels|felt|look|looks|looked|seem|seems|seemed|become|becomes|became|leave|leaves|left|put|puts|use|uses|used|work|works|worked|call|calls|called|try|tries|tried|ask|asks|asked|need|needs|needed|want|wants|wanted|turn|turns|turned|start|starts|started|show|shows|showed|hear|hears|heard|play|plays|played|run|runs|ran|move|moves|moved|live|lives|lived|believe|believes|believed|hold|holds|held|bring|brings|brought|happen|happens|happened|write|writes|wrote|provide|provides|provided|sit|sits|sat|stand|stands|stood|lose|loses|lost|pay|pays|paid|meet|meets|met|include|includes|included|continue|continues|continued|set|sets|serve|serves|served|appear|appears|appeared|allow|allows|allowed|lead|leads|led|help|helps|helped|offer|offers|offered|spend|spends|spent|talk|talks|talked|return|returns|returned|change|changes|changed|raise|raises|raised|pass|passes|passed|sell|sells|sold|require|requires|required|report|reports|reported|decide|decides|decided|pull|pulls|pulled)\b/i;
         const hasVerb = commonVerbs.test(trimmed);
 
         // Check if it has sentence structure (capital letter at start)
@@ -175,7 +302,11 @@ Provide only the definition and contextual explanation, no additional formatting
         // 1. It has multiple words AND
         // 2. (It ends with punctuation OR has a verb) AND
         // 3. Starts with a capital letter (optional but helpful)
-        return words.length >= 2 && (endsWithPunctuation || hasVerb) && (startsWithCapital || endsWithPunctuation || hasVerb);
+        return (
+            words.length >= 2 &&
+            (endsWithPunctuation || hasVerb) &&
+            (startsWithCapital || endsWithPunctuation || hasVerb)
+        );
     }
 
     async callOpenAI(prompt, model, apiKey) {
@@ -183,23 +314,82 @@ Provide only the definition and contextual explanation, no additional formatting
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
+                Authorization: 'Bearer ' + apiKey
             },
             body: JSON.stringify({
                 model: model,
                 messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
+                max_tokens: 800,
                 temperature: 0.7
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error('OpenAI API error: ' + (error.error && error.error.message || 'Unknown error'));
+            throw new Error('OpenAI API error: ' + ((error.error && error.error.message) || 'Unknown error'));
         }
 
         const data = await response.json();
         return data.choices[0].message.content.trim();
+    }
+
+    async callOpenAIStream(prompt, model, apiKey, onChunk) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 800,
+                temperature: 0.7,
+                stream: true
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error('OpenAI API error: ' + ((error.error && error.error.message) || 'Unknown error'));
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices?.[0]?.delta?.content;
+
+                            if (content) {
+                                fullContent += content;
+                                onChunk(content);
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        return fullContent.trim();
     }
 
     async callAnthropic(prompt, model, apiKey) {
@@ -212,44 +402,49 @@ Provide only the definition and contextual explanation, no additional formatting
             },
             body: JSON.stringify({
                 model: model,
-                max_tokens: 300,
+                max_tokens: 800,
                 messages: [{ role: 'user', content: prompt }]
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error('Anthropic API error: ' + (error.error && error.error.message || 'Unknown error'));
+            throw new Error('Anthropic API error: ' + ((error.error && error.error.message) || 'Unknown error'));
         }
 
         const data = await response.json();
-        return data.content[0].text.trim();
+        return data.content?.[0]?.text?.trim() || '';
     }
 
     async callGemini(prompt, model, apiKey) {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    maxOutputTokens: 300,
-                    temperature: 0.7
-                }
-            })
-        });
+        const response = await fetch(
+            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [{ text: prompt }]
+                        }
+                    ],
+                    generationConfig: {
+                        maxOutputTokens: 800,
+                        temperature: 0.7
+                    }
+                })
+            }
+        );
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error('Gemini API error: ' + (error.error && error.error.message || 'Unknown error'));
+            throw new Error('Gemini API error: ' + ((error.error && error.error.message) || 'Unknown error'));
         }
 
         const data = await response.json();
-        return data.candidates[0].content.parts[0].text.trim();
+        return data.candidates?.[0]?.content?.[0]?.text?.trim() || '';
     }
 
     async callXAI(prompt, model, apiKey) {
@@ -257,23 +452,27 @@ Provide only the definition and contextual explanation, no additional formatting
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
+                Authorization: 'Bearer ' + apiKey
             },
             body: JSON.stringify({
                 model: model,
                 messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
+                max_tokens: 800,
                 temperature: 0.7
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error('xAI API error: ' + (error.error && error.error.message || 'Unknown error'));
+            throw new Error('xAI API error: ' + ((error.error && error.error.message) || 'Unknown error'));
         }
 
         const data = await response.json();
-        const message = data.choices[0].message;
+        const message = data.choices?.[0]?.message;
+
+        if (!message) {
+            return '';
+        }
 
         // xAI's Grok models sometimes put the actual response in reasoning_content instead of content
         // So we check reasoning_content first if content is empty
@@ -356,48 +555,96 @@ class BackgroundService {
 
     async handleMessage(request, sender, sendResponse) {
         try {
-            switch (request.action) {
-                case 'explain-text':
-                    const explanation = await this.aiService.explainText(
-                        request.text,
-                        request.context,
-                        request.settings
-                    );
-                    sendResponse({ success: true, explanation: explanation });
-                    break;
-
-                case 'get-settings':
-                    const settings = await this.settingsManager.getSettings();
-                    sendResponse({ success: true, settings: settings });
-                    break;
-
-                case 'save-settings':
-                    await this.settingsManager.saveSettings(request.settings);
-                    sendResponse({ success: true });
-                    break;
-
-                case 'test-api-key':
-                    const isValid = await this.aiService.testApiKey(
-                        request.provider,
-                        request.apiKey,
-                        request.model
-                    );
-                    sendResponse({ success: true, isValid: isValid });
-                    break;
-
-                case 'open-settings':
-                    chrome.tabs.create({
-                        url: chrome.runtime.getURL('src/settings/settings.html')
-                    });
-                    sendResponse({ success: true });
-                    break;
-
-                default:
-                    sendResponse({ success: false, error: 'Unknown action' });
+            if (request.action === 'get-settings') {
+                const settings = await this.settingsManager.getSettings();
+                sendResponse({ success: true, settings });
+            } else if (request.action === 'save-settings') {
+                await this.settingsManager.saveSettings(request.settings);
+                sendResponse({ success: true });
+            } else if (request.action === 'explain-text') {
+                const explanation = await this.aiService.explainText(request.text, request.context, request.settings);
+                sendResponse({ success: true, explanation });
+            } else if (request.action === 'explain-text-stream') {
+                // Handle streaming explanation
+                this.handleStreamingRequest(request, sender, 'explain');
+                sendResponse({ success: true, streaming: true });
+            } else if (request.action === 'analyze-grammar') {
+                const analysis = await this.aiService.analyzeGrammar(request.text, request.context, request.settings);
+                sendResponse({ success: true, analysis });
+            } else if (request.action === 'analyze-grammar-stream') {
+                // Handle streaming grammar analysis
+                this.handleStreamingRequest(request, sender, 'grammar');
+                sendResponse({ success: true, streaming: true });
+            } else if (request.action === 'test-api-key') {
+                const result = await this.aiService.testApiKey(request.provider, request.apiKey, request.model);
+                sendResponse({ success: true, result });
+            } else if (request.action === 'get-providers') {
+                const providers = this.aiService.getAvailableProviders();
+                sendResponse({ success: true, providers });
+            } else if (request.action === 'open-settings') {
+                chrome.tabs.create({
+                    url: chrome.runtime.getURL('src/settings/settings.html')
+                });
+                sendResponse({ success: true });
+            } else {
+                sendResponse({ success: false, error: 'Unknown action' });
             }
         } catch (error) {
             console.error('Background script error:', error);
             sendResponse({ success: false, error: error.message });
+        }
+    }
+
+    async handleStreamingRequest(request, sender, type) {
+        const streamId = `stream-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log(`Starting streaming request for type: ${type}, text: "${request.text}"`);
+
+        try {
+            const onChunk = chunk => {
+                console.log(`Sending ${type} chunk:`, chunk);
+                chrome.tabs.sendMessage(sender.tab.id, {
+                    action: 'stream-chunk',
+                    streamId: streamId,
+                    chunk: chunk,
+                    type: type
+                });
+            };
+
+            let result;
+            if (type === 'explain') {
+                result = await this.aiService.explainTextStream(
+                    request.text,
+                    request.context,
+                    request.settings,
+                    onChunk
+                );
+            } else if (type === 'grammar') {
+                console.log('Starting grammar analysis stream');
+                result = await this.aiService.analyzeGrammarStream(
+                    request.text,
+                    request.context,
+                    request.settings,
+                    onChunk
+                );
+                console.log('Grammar analysis stream completed, result length:', result.length);
+            }
+
+            // Send completion message
+            console.log(`Sending ${type} completion message`);
+            chrome.tabs.sendMessage(sender.tab.id, {
+                action: 'stream-complete',
+                streamId: streamId,
+                result: result,
+                type: type
+            });
+        } catch (error) {
+            console.error('Streaming error:', error);
+            chrome.tabs.sendMessage(sender.tab.id, {
+                action: 'stream-error',
+                streamId: streamId,
+                error: error.message,
+                type: type
+            });
         }
     }
 }

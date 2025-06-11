@@ -107,7 +107,7 @@ class PopupManager {
             const response = await chrome.runtime.sendMessage({
                 action: 'test-api-key',
                 provider: this.settings.provider,
-                apiKey: this.settings.apiKeys ? .[this.settings.provider],
+                apiKey: this.settings.apiKeys?.[this.settings.provider],
                 model: this.settings.model
             });
 
@@ -138,7 +138,7 @@ class PopupManager {
         const statusElement = document.getElementById('extension-status');
         if (statusElement) {
             // Check if API key is configured
-            const hasApiKey = this.settings ? .apiKeys ? .[this.settings ? .provider];
+            const hasApiKey = this.settings?.apiKeys?.[this.settings?.provider];
 
             if (hasApiKey) {
                 statusElement.textContent = 'Ready';
