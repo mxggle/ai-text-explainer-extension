@@ -217,6 +217,10 @@ class TextExplainer {
         const closeBtn = dialog.querySelector('.ai-explainer-close-btn');
         closeBtn.addEventListener('click', () => this.closeDialog());
 
+        // Make dialog draggable and resizable
+        this.setupDialogDrag(dialog);
+        this.setupDialogResize(dialog);
+
         this.currentDialog = dialog;
         document.body.appendChild(dialog);
     }
@@ -458,6 +462,10 @@ class TextExplainer {
             });
         });
 
+        // Make dialog draggable and resizable
+        this.setupDialogDrag(dialog);
+        this.setupDialogResize(dialog);
+
         this.currentDialog = dialog;
         document.body.appendChild(dialog);
     }
@@ -500,6 +508,10 @@ class TextExplainer {
             window.open(chrome.runtime.getURL('src/settings/settings.html'));
         });
 
+        // Make dialog draggable and resizable
+        this.setupDialogDrag(dialog);
+        this.setupDialogResize(dialog);
+
         this.currentDialog = dialog;
         document.body.appendChild(dialog);
     }
@@ -508,6 +520,17 @@ class TextExplainer {
         const dialog = document.createElement('div');
         dialog.className = 'ai-explainer-dialog';
         dialog.setAttribute('data-theme', this.settings.theme || 'auto');
+
+        // Add resizers
+        const resizers = document.createElement('div');
+        resizers.className = 'resizers-container';
+        resizers.innerHTML = `
+            <div class="resizer resizer-r"></div>
+            <div class="resizer resizer-b"></div>
+            <div class="resizer resizer-br"></div>
+        `;
+        dialog.appendChild(resizers);
+
         return dialog;
     }
 
@@ -777,6 +800,18 @@ class TextExplainer {
 
     closeDialog() {
         if (this.currentDialog) {
+            // Clean up drag event listeners
+            if (this.currentDialog._dragCleanup) {
+                this.currentDialog._dragCleanup();
+            }
+            // Clean up resize event listeners
+            if (this.currentDialog._resizeCleanup) {
+                this.currentDialog._resizeCleanup();
+            }
+            // Clean up scroll prevention event listeners
+            if (this.currentDialog._scrollCleanup) {
+                this.currentDialog._scrollCleanup();
+            }
             this.currentDialog.remove();
             this.currentDialog = null;
         }
@@ -784,14 +819,14 @@ class TextExplainer {
 
     handleOutsideClick(e) {
         if (this.currentDialog && !this.currentDialog.contains(e.target)) {
-            // Don't close if clicking on the floating button
-            if (!e.target.closest('#ai-explainer-button')) {
+            // Don't close if clicking on the floating button or if currently resizing
+            if (!e.target.closest('#ai-explainer-button') && !this._isResizing) {
                 this.closeDialog();
             }
         }
 
-        // Hide floating button if clicking outside
-        if (!e.target.closest('#ai-explainer-button')) {
+        // Hide floating button if clicking outside (but not during resize)
+        if (!e.target.closest('#ai-explainer-button') && !this._isResizing) {
             this.hideFloatingButton();
         }
     }
@@ -821,7 +856,10 @@ class TextExplainer {
         const showGrammarTab = isSentence;
 
         // Initialize with streaming content placeholders
-        dialog.innerHTML = `
+        // Note: Don't use innerHTML as it removes the resizer elements added by createDialog()
+        dialog.insertAdjacentHTML(
+            'beforeend',
+            `
             <div class="ai-explainer-dialog-header">
                 <div class="header-content">
                     <div class="ai-icon">${headerIcon}</div>
@@ -910,7 +948,8 @@ class TextExplainer {
                     </button>
                 </div>
             </div>
-        `;
+        `
+        );
 
         // Store dialog state for streaming
         this.currentDialog = dialog;
@@ -929,6 +968,13 @@ class TextExplainer {
     }
 
     setupDialogEventListeners(dialog, displayText, showGrammarTab, copyButtonText, contextText) {
+        // Make dialog draggable
+        this.setupDialogDrag(dialog);
+        this.setupDialogResize(dialog);
+
+        // Prevent main page scrolling when scrolling inside dialog
+        this.setupScrollPrevention(dialog);
+
         // Close button
         const closeBtn = dialog.querySelector('.ai-explainer-close-btn');
         closeBtn.addEventListener('click', () => this.closeDialog());
@@ -1042,6 +1088,235 @@ class TextExplainer {
                 }, 2000);
             });
         });
+    }
+
+    setupDialogDrag(dialog) {
+        const header = dialog.querySelector('.ai-explainer-dialog-header');
+        if (!header) return;
+
+        let isDragging = false;
+        let initialMouseX = 0;
+        let initialMouseY = 0;
+        let dialogX = 0;
+        let dialogY = 0;
+        let initialDialogX = 0;
+        let initialDialogY = 0;
+
+        const handleMouseDown = e => {
+            if (e.target.closest('.ai-explainer-close-btn, button, input')) {
+                return;
+            }
+            e.preventDefault();
+
+            isDragging = true;
+            initialMouseX = e.clientX;
+            initialMouseY = e.clientY;
+            initialDialogX = dialogX;
+            initialDialogY = dialogY;
+
+            header.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
+        };
+
+        const handleMouseMove = e => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const deltaX = e.clientX - initialMouseX;
+            const deltaY = e.clientY - initialMouseY;
+
+            let newDialogX = initialDialogX + deltaX;
+            let newDialogY = initialDialogY + deltaY;
+
+            const dialogWidth = dialog.offsetWidth;
+            const dialogHeight = dialog.offsetHeight;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            const minX = dialogWidth / 2 - viewportWidth / 2;
+            const maxX = viewportWidth / 2 - dialogWidth / 2;
+            const minY = dialogHeight / 2 - viewportHeight / 2;
+            const maxY = viewportHeight / 2 - dialogHeight / 2;
+
+            newDialogX = Math.max(minX, Math.min(maxX, newDialogX));
+            newDialogY = Math.max(minY, Math.min(maxY, newDialogY));
+
+            dialogX = newDialogX;
+            dialogY = newDialogY;
+
+            dialog.style.transform = `translate(calc(-50% + ${dialogX}px), calc(-50% + ${dialogY}px))`;
+        };
+
+        const handleMouseUp = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            header.style.cursor = 'grab';
+            document.body.style.userSelect = '';
+        };
+
+        // Add event listeners
+        header.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('mouseleave', handleMouseUp); // Stop dragging if mouse leaves window
+
+        // Store cleanup function
+        dialog._dragCleanup = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('mouseleave', handleMouseUp);
+            header.removeEventListener('mousedown', handleMouseDown);
+            document.body.style.userSelect = '';
+        };
+    }
+
+    setupDialogResize(dialog) {
+        const resizers = dialog.querySelectorAll('.resizer');
+        const MIN_WIDTH = 380;
+        const MIN_HEIGHT = 200;
+        // Remove max size limitations to allow unlimited resizing
+
+        const resizeEventListeners = [];
+
+        resizers.forEach(resizer => {
+            const handleMouseDown = e => {
+                e.preventDefault();
+                e.stopPropagation(); // Stop drag from firing
+
+                // Set flag to prevent dialog from closing during resize
+                this._isResizing = true;
+
+                // Get current dialog dimensions and position
+                const rect = dialog.getBoundingClientRect();
+                const originalWidth = rect.width;
+                const originalHeight = rect.height;
+                const originalMouseX = e.clientX;
+                const originalMouseY = e.clientY;
+
+                // Disable user selection during resize
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+
+                const handleMouseMove = e => {
+                    let newWidth = originalWidth;
+                    let newHeight = originalHeight;
+
+                    if (resizer.classList.contains('resizer-r')) {
+                        // Right edge resize
+                        newWidth = originalWidth + (e.clientX - originalMouseX);
+                    } else if (resizer.classList.contains('resizer-b')) {
+                        // Bottom edge resize
+                        newHeight = originalHeight + (e.clientY - originalMouseY);
+                    } else if (resizer.classList.contains('resizer-br')) {
+                        // Bottom-right corner resize
+                        newWidth = originalWidth + (e.clientX - originalMouseX);
+                        newHeight = originalHeight + (e.clientY - originalMouseY);
+                    }
+
+                    // Apply only minimum constraints (no maximum)
+                    newWidth = Math.max(newWidth, MIN_WIDTH);
+                    newHeight = Math.max(newHeight, MIN_HEIGHT);
+
+                    // Apply new dimensions
+                    dialog.style.width = newWidth + 'px';
+                    dialog.style.height = newHeight + 'px';
+
+                    // Remove max-width and max-height constraints from CSS when manually resizing
+                    dialog.style.maxWidth = 'none';
+                    dialog.style.maxHeight = 'none';
+
+                    // Ensure content is scrollable if needed
+                    const content = dialog.querySelector('.ai-explainer-dialog-content');
+                    if (content) {
+                        content.style.maxHeight = newHeight - 50 + 'px'; // Account for header
+                        content.style.overflowY = 'auto';
+                    }
+                };
+
+                const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+
+                    // Re-enable user selection
+                    document.body.style.userSelect = '';
+                    document.body.style.webkitUserSelect = '';
+
+                    // Clear resize flag with a small delay to prevent accidental closing
+                    setTimeout(() => {
+                        this._isResizing = false;
+                    }, 100);
+                };
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            };
+
+            resizer.addEventListener('mousedown', handleMouseDown);
+            resizeEventListeners.push({ element: resizer, handler: handleMouseDown });
+        });
+
+        // Store cleanup function for resize functionality
+        dialog._resizeCleanup = () => {
+            resizeEventListeners.forEach(({ element, handler }) => {
+                element.removeEventListener('mousedown', handler);
+            });
+            document.body.style.userSelect = '';
+            document.body.style.webkitUserSelect = '';
+            this._isResizing = false;
+        };
+    }
+
+    setupScrollPrevention(dialog) {
+        // Prevent wheel events from bubbling up to prevent main page scrolling
+        const handleWheel = e => {
+            const dialogContent = dialog.querySelector('.ai-explainer-dialog-content');
+            if (!dialogContent) return;
+
+            const isScrollable = dialogContent.scrollHeight > dialogContent.clientHeight;
+
+            if (isScrollable) {
+                const atTop = dialogContent.scrollTop === 0;
+                const atBottom = dialogContent.scrollTop + dialogContent.clientHeight >= dialogContent.scrollHeight;
+
+                // Prevent main page scroll only if we're not at the boundaries or scrolling in the right direction
+                if ((!atTop && e.deltaY < 0) || (!atBottom && e.deltaY > 0)) {
+                    e.stopPropagation();
+                } else if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                    // At boundary and trying to scroll beyond - prevent main page scroll
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            } else {
+                // If content isn't scrollable, prevent main page scroll entirely
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        // Prevent touch scroll events on mobile
+        const handleTouchMove = e => {
+            const dialogContent = dialog.querySelector('.ai-explainer-dialog-content');
+            if (!dialogContent) return;
+
+            // Only prevent if the touch is within the dialog content area
+            if (dialogContent.contains(e.target)) {
+                const isScrollable = dialogContent.scrollHeight > dialogContent.clientHeight;
+                if (!isScrollable) {
+                    e.preventDefault();
+                }
+                e.stopPropagation();
+            }
+        };
+
+        // Add event listeners with passive: false to allow preventDefault
+        dialog.addEventListener('wheel', handleWheel, { passive: false });
+        dialog.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+        // Store cleanup function for scroll prevention
+        dialog._scrollCleanup = () => {
+            dialog.removeEventListener('wheel', handleWheel);
+            dialog.removeEventListener('touchmove', handleTouchMove);
+        };
     }
 
     handleStreamChunk(request) {

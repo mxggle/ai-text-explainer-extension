@@ -36,9 +36,9 @@
 
 .ai-explainer-dialog {
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 2147483647 !important;
     min-width: 380px !important;
     max-width: 500px !important;
@@ -48,7 +48,7 @@
     box-shadow: 0 8px 24px rgba(45, 42, 38, 0.12) !important;
     overflow: hidden !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    animation: ai-explainer-dialog-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    animation: ai-explainer-dialog-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     border: 1px solid #f0ede8 !important;
 }
 
@@ -63,6 +63,70 @@
     }
 }
 
+/* Resizable Dialog Handles */
+.ai-explainer-dialog .resizer {
+    position: absolute !important;
+    z-index: 10 !important;
+    background: transparent !important;
+    transition: background-color 0.2s ease !important;
+    pointer-events: auto !important;
+}
+
+.ai-explainer-dialog .resizer:hover {
+    background-color: rgba(139, 115, 85, 0.3) !important; /* Visual feedback on hover */
+}
+
+.ai-explainer-dialog .resizer:active {
+    background-color: rgba(139, 115, 85, 0.4) !important; /* Visual feedback when dragging */
+}
+
+.ai-explainer-dialog .resizer-r {
+    cursor: col-resize !important;
+    height: 100% !important;
+    width: 8px !important;
+    top: 0 !important;
+    right: 0 !important;
+}
+
+.ai-explainer-dialog .resizer-b {
+    cursor: row-resize !important;
+    height: 8px !important;
+    width: 100% !important;
+    bottom: 0 !important;
+    left: 0 !important;
+}
+
+.ai-explainer-dialog .resizer-br {
+    cursor: se-resize !important;
+    height: 16px !important;
+    width: 16px !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    z-index: 11 !important; /* Above other handles */
+    background: rgba(139, 115, 85, 0.15) !important; /* More visible by default */
+    border-top-left-radius: 4px !important;
+}
+
+.ai-explainer-dialog .resizer-br:hover {
+    background: rgba(139, 115, 85, 0.5) !important;
+}
+
+.ai-explainer-dialog .resizer-br::after {
+    content: '' !important;
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 2px !important;
+    width: 3px !important;
+    height: 3px !important;
+    background: rgba(139, 115, 85, 0.6) !important;
+    border-radius: 50% !important;
+}
+
+/* Ensure dialog doesn't have conflicting size constraints */
+.ai-explainer-dialog {
+    resize: none !important; /* Disable browser default resize */
+}
+
 /* Dialog Header - Very small */
 
 .ai-explainer-dialog-header {
@@ -73,6 +137,8 @@
     background: #f5f3f0 !important;
     color: #2d2a26 !important;
     border-bottom: 1px solid #ebe8e3 !important;
+    cursor: grab !important;
+    user-select: none !important;
 }
 
 .header-content {
@@ -884,6 +950,10 @@
     background-color: #c7c1ba !important;
 }
 
+.ai-explainer-dialog[data-theme='dark'] .ai-explainer-dialog-header {
+    cursor: grab !important;
+}
+
 /* Auto theme with prefers-color-scheme */
 
 @media (prefers-color-scheme: dark) {
@@ -1050,6 +1120,10 @@
 
     .ai-explainer-dialog[data-theme='auto'] .streaming-cursor {
         background-color: #c7c1ba !important;
+    }
+
+    .ai-explainer-dialog[data-theme='auto'] .ai-explainer-dialog-header {
+        cursor: grab !important;
     }
 }
 
