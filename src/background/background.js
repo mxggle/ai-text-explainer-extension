@@ -79,7 +79,7 @@ class AIService {
         };
     }
 
-    async explainText(selectedText, context, settings) {
+    async explainText(selectedText, context, settings, isSentence = null) {
         const provider = settings.provider || 'openai';
         const model = settings.model || this.providers[provider].models[0];
         const apiKey = settings.apiKeys && settings.apiKeys[provider];
@@ -88,7 +88,7 @@ class AIService {
             throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
         }
 
-        const prompt = this.buildExplanationPrompt(selectedText, context, settings);
+        const prompt = this.buildExplanationPrompt(selectedText, context, settings, isSentence);
 
         switch (provider) {
             case 'openai':
@@ -104,10 +104,12 @@ class AIService {
         }
     }
 
-    buildExplanationPrompt(selectedText, context, settings) {
+    buildExplanationPrompt(selectedText, context, settings, isSentence = null) {
         const detailLevel = settings.detailLevel || 'medium';
         const language = settings.language || 'English';
-        const isSentence = this.isSentence(selectedText);
+
+        // Use passed sentence detection or fallback to our own detection
+        const isTextSentence = isSentence !== null ? isSentence : this.isSentence(selectedText);
 
         const detailInstructions = {
             ultra_brief: 'Provide an ultra-concise explanation in exactly 1 sentence.',
@@ -116,26 +118,27 @@ class AIService {
             detailed: 'Provide a comprehensive explanation with examples and context.'
         };
 
-        if (isSentence) {
-            // For sentences: translate + explain in context
-            return `You are an intelligent text explainer. Your task is to translate and explain sentences based on their context.
+        if (isTextSentence) {
+            // For sentences: ALWAYS prioritize translation first, then explain
+            return `You are an intelligent text explainer specializing in sentence translation and explanation.
 
 Selected sentence: "${selectedText}"
 
 Context: "${context}"
 
-Instructions:
-1. First, if the sentence is not in ${language}, translate it to ${language}. If it's already in ${language}, skip translation.
-2. Then explain the sentence considering its context
+CRITICAL INSTRUCTIONS:
+1. **TRANSLATION FIRST**: Always start by translating the sentence to ${language}. If it's already in ${language}, write "Already in ${language}".
+2. **THEN EXPLAIN IN ${language}**: After translation, provide a detailed explanation of the sentence in its context. THE EXPLANATION MUST BE WRITTEN IN ${language}.
 3. ${detailInstructions[detailLevel]}
-4. Focus on the meaning, significance, or implications of the sentence
-5. If it contains technical terms or cultural references, explain them
+4. Focus on the meaning, cultural context, implications, and significance of the sentence
+5. Explain any idioms, technical terms, or cultural references
+6. Consider the tone, register, and style of the original sentence
 
-Format your response as:
-**Translation:** [translation if needed, or "Already in ${language}"]
-**Explanation:** [your explanation]
+Response Format (MANDATORY):
+**Translation:** [Always provide translation or "Already in ${language}"]
+**Explanation:** [Comprehensive explanation in ${language} considering context, meaning, and cultural aspects]
 
-Provide only the translation and explanation, no additional formatting or prefixes.`;
+IMPORTANT: Both the translation AND explanation must be in ${language}. Do not use English for the explanation.`;
         } else {
             // For non-sentences: dictionary definition + explain in context
             return `You are an intelligent text explainer. Your task is to provide dictionary definitions and contextual explanations for words or phrases.
@@ -147,16 +150,16 @@ Context: "${context}"
 Instructions:
 1. First, provide a dictionary-style definition of the selected text
 2. Then explain how it's used in the given context
-3. Use ${language} language
+3. Use ${language} language for ALL responses
 4. ${detailInstructions[detailLevel]}
 5. If it's a technical term, explain it in simple terms
 6. If it has multiple meanings, focus on the most relevant one given the context
 
 Format your response as:
-**Definition:** [dictionary definition]
-**In Context:** [contextual explanation]
+**Definition:** [dictionary definition in ${language}]
+**In Context:** [contextual explanation in ${language}]
 
-Provide only the definition and contextual explanation, no additional formatting or prefixes.`;
+IMPORTANT: Both the definition AND contextual explanation must be written in ${language}. Do not use English.`;
         }
     }
 
@@ -206,7 +209,7 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
         }
     }
 
-    async explainTextStream(selectedText, context, settings, onChunk) {
+    async explainTextStream(selectedText, context, settings, onChunk, isSentence = null) {
         const provider = settings.provider || 'openai';
         const model = settings.model || this.providers[provider].models[0];
         const apiKey = settings.apiKeys && settings.apiKeys[provider];
@@ -215,7 +218,7 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
             throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
         }
 
-        const prompt = this.buildExplanationPrompt(selectedText, context, settings);
+        const prompt = this.buildExplanationPrompt(selectedText, context, settings, isSentence);
 
         switch (provider) {
             case 'openai':
@@ -562,7 +565,12 @@ class BackgroundService {
                 await this.settingsManager.saveSettings(request.settings);
                 sendResponse({ success: true });
             } else if (request.action === 'explain-text') {
-                const explanation = await this.aiService.explainText(request.text, request.context, request.settings);
+                const explanation = await this.aiService.explainText(
+                    request.text,
+                    request.context,
+                    request.settings,
+                    request.isSentence
+                );
                 sendResponse({ success: true, explanation });
             } else if (request.action === 'explain-text-stream') {
                 // Handle streaming explanation
@@ -616,7 +624,8 @@ class BackgroundService {
                     request.text,
                     request.context,
                     request.settings,
-                    onChunk
+                    onChunk,
+                    request.isSentence
                 );
             } else if (type === 'grammar') {
                 console.log('Starting grammar analysis stream');

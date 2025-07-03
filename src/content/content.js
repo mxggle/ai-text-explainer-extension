@@ -154,19 +154,20 @@ class TextExplainer {
         this.showLoadingDialog(text);
 
         try {
-            // Use streaming API
+            // Determine if it's a sentence for both UI and AI processing
+            const isTextSentence = this.isSentence(text);
+            console.log('Text is sentence:', isTextSentence, 'Text:', text);
+
+            // Use streaming API and pass sentence detection information
             const response = await chrome.runtime.sendMessage({
                 action: 'explain-text-stream',
                 text: text,
                 context: this.selectedContext,
-                settings: this.settings
+                settings: this.settings,
+                isSentence: isTextSentence // Pass sentence detection to background script
             });
 
             if (response.success && response.streaming) {
-                // Determine if it's a sentence for UI purposes
-                const isTextSentence = this.isSentence(text);
-                console.log('Text is sentence:', isTextSentence, 'Text:', text);
-
                 // Initialize streaming dialog
                 this.showStreamingExplanationDialog(text, isTextSentence);
             } else {
