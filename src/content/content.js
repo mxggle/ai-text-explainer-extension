@@ -253,8 +253,9 @@ class TextExplainer {
         const headerIcon = isSentence ? '🌐' : '📖';
         const copyButtonText = isSentence ? 'Copy Translation' : 'Copy Definition';
 
-        // Create tabs - show Grammar tab for all sentences (even if analysis failed)
+        // Create tabs - show Grammar tab for sentences, Examples tab for non-sentences
         const showGrammarTab = isSentence;
+        const showExamplesTab = !isSentence;
 
         dialog.innerHTML = `
             <div class="ai-explainer-dialog-header">
@@ -298,6 +299,32 @@ class TextExplainer {
                                                 ? this.parseMarkdown(grammarAnalysis)
                                                 : '<div class="loading-content"><div class="loading-spinner"></div><div class="loading-text">Analyzing grammar...</div></div>'
                                         }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `
+                            : showExamplesTab
+                            ? `
+                        <div class="tabs-container">
+                            <div class="tabs-header">
+                                <button class="tab-btn active" data-tab="definition">Definition</button>
+                                <button class="tab-btn" data-tab="examples">Examples</button>
+                            </div>
+                            <div class="tabs-content">
+                                <div class="tab-panel active" id="definition-panel">
+                                    <div class="definition-section">
+                                        <div class="definition-content">
+                                            ${parsedExplanation.content}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-panel" id="examples-panel">
+                                    <div class="examples-analysis">
+                                        <div class="loading-content">
+                                            <div class="loading-spinner"></div>
+                                            <div class="loading-text">Click to generate examples...</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -350,11 +377,12 @@ class TextExplainer {
             this.speakText(displayText);
         });
 
-        // Add tabs functionality with lazy loading for Grammar tab
-        if (showGrammarTab) {
+        // Add tabs functionality with lazy loading for Grammar/Examples tabs
+        if (showGrammarTab || showExamplesTab) {
             const tabBtns = dialog.querySelectorAll('.tab-btn');
             const tabPanels = dialog.querySelectorAll('.tab-panel');
             let grammarLoaded = false;
+            let examplesLoaded = false;
 
             tabBtns.forEach(btn => {
                 btn.addEventListener('click', async () => {
@@ -400,6 +428,40 @@ class TextExplainer {
                             console.error('Grammar analysis error:', error);
                             grammarContent.innerHTML = `<div class="error-content">
                                 <div class="error-message">Failed to analyze grammar</div>
+                                <div class="error-hint">${error.message}</div>
+                            </div>`;
+                        }
+                    }
+
+                    // Lazy load examples when Examples tab is clicked
+                    if (tabName === 'examples' && !examplesLoaded) {
+                        examplesLoaded = true;
+                        const examplesContent = panel.querySelector('.examples-analysis');
+
+                        try {
+                            console.log('Requesting examples for:', text);
+                            const examplesResponse = await chrome.runtime.sendMessage({
+                                action: 'generate-examples',
+                                text: text,
+                                context: this.selectedContext,
+                                settings: this.settings
+                            });
+                            console.log('Examples response:', examplesResponse);
+
+                            if (examplesResponse.success) {
+                                examplesContent.innerHTML = this.parseMarkdown(examplesResponse.examples);
+                                console.log('Examples received and displayed');
+                            } else {
+                                console.error('Examples generation failed:', examplesResponse.error);
+                                examplesContent.innerHTML = `<div class="error-content">
+                                    <div class="error-message">Failed to generate examples</div>
+                                    <div class="error-hint">${examplesResponse.error || 'Unknown error'}</div>
+                                </div>`;
+                            }
+                        } catch (error) {
+                            console.error('Examples generation error:', error);
+                            examplesContent.innerHTML = `<div class="error-content">
+                                <div class="error-message">Failed to generate examples</div>
                                 <div class="error-hint">${error.message}</div>
                             </div>`;
                         }
@@ -855,6 +917,7 @@ class TextExplainer {
         const headerIcon = isSentence ? '🌐' : '📖';
         const copyButtonText = isSentence ? 'Copy Translation' : 'Copy Definition';
         const showGrammarTab = isSentence;
+        const showExamplesTab = !isSentence;
 
         // Initialize with streaming content placeholders
         // Note: Don't use innerHTML as it removes the resizer elements added by createDialog()
@@ -910,6 +973,36 @@ class TextExplainer {
                             </div>
                         </div>
                     `
+                            : showExamplesTab
+                            ? `
+                        <div class="tabs-container">
+                            <div class="tabs-header">
+                                <button class="tab-btn active" data-tab="definition">Definition</button>
+                                <button class="tab-btn" data-tab="examples">Examples</button>
+                            </div>
+                            <div class="tabs-content">
+                                <div class="tab-panel active" id="definition-panel">
+                                    <div class="definition-section">
+                                        <div class="definition-content">
+                                            <div class="streaming-content" id="streaming-content">
+                                                <div class="streaming-placeholder">
+                                                    <div class="streaming-cursor"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-panel" id="examples-panel">
+                                    <div class="examples-analysis">
+                                        <div class="loading-content">
+                                            <div class="loading-spinner"></div>
+                                            <div class="loading-text">Click to generate examples...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `
                             : `
                         <div class="definition-section">
                             <div class="definition-content">
@@ -959,16 +1052,31 @@ class TextExplainer {
             isSentence: isSentence,
             streamingContent: '',
             isStreaming: true,
-            grammarLoaded: false
+            grammarLoaded: false,
+            examplesLoaded: false
         };
 
         // Add event listeners
-        this.setupDialogEventListeners(dialog, displayText, showGrammarTab, copyButtonText, contextText);
+        this.setupDialogEventListeners(
+            dialog,
+            displayText,
+            showGrammarTab,
+            copyButtonText,
+            contextText,
+            showExamplesTab
+        );
 
         document.body.appendChild(dialog);
     }
 
-    setupDialogEventListeners(dialog, displayText, showGrammarTab, copyButtonText, contextText) {
+    setupDialogEventListeners(
+        dialog,
+        displayText,
+        showGrammarTab,
+        copyButtonText,
+        contextText,
+        showExamplesTab = false
+    ) {
         // Make dialog draggable
         this.setupDialogDrag(dialog);
         this.setupDialogResize(dialog);
@@ -986,8 +1094,8 @@ class TextExplainer {
             this.speakText(displayText);
         });
 
-        // Tabs functionality with lazy loading for Grammar tab
-        if (showGrammarTab) {
+        // Tabs functionality with lazy loading for Grammar/Examples tabs
+        if (showGrammarTab || showExamplesTab) {
             const tabBtns = dialog.querySelectorAll('.tab-btn');
             const tabPanels = dialog.querySelectorAll('.tab-panel');
 
@@ -1035,6 +1143,39 @@ class TextExplainer {
                             console.error('Grammar analysis error:', error);
                             grammarContent.innerHTML = `<div class="error-content">
                                 <div class="error-message">Failed to analyze grammar</div>
+                                <div class="error-hint">${error.message}</div>
+                            </div>`;
+                        }
+                    }
+
+                    // Lazy load examples when Examples tab is clicked
+                    if (tabName === 'examples' && !this.currentDialogState.examplesLoaded) {
+                        this.currentDialogState.examplesLoaded = true;
+                        const examplesContent = panel.querySelector('.examples-analysis');
+
+                        try {
+                            console.log('Requesting streaming examples for:', this.currentDialogState.text);
+                            const examplesResponse = await chrome.runtime.sendMessage({
+                                action: 'generate-examples-stream',
+                                text: this.currentDialogState.text,
+                                context: this.selectedContext,
+                                settings: this.settings
+                            });
+                            console.log('Examples streaming response:', examplesResponse);
+
+                            if (examplesResponse.success && examplesResponse.streaming) {
+                                examplesContent.innerHTML = `
+                                    <div class="streaming-content" id="examples-streaming-content">
+                                        <div class="streaming-placeholder">
+                                            <div class="streaming-cursor"></div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Examples streaming error:', error);
+                            examplesContent.innerHTML = `<div class="error-content">
+                                <div class="error-message">Failed to generate examples</div>
                                 <div class="error-hint">${error.message}</div>
                             </div>`;
                         }
@@ -1352,6 +1493,15 @@ class TextExplainer {
             contentElement = this.currentDialog.querySelector('#grammar-streaming-content');
             streamingContent = this.currentDialogState.grammarStreamingContent;
             console.log('Updated grammar content, total length:', streamingContent.length);
+        } else if (request.type === 'examples') {
+            // Handle examples streaming separately
+            if (!this.currentDialogState.examplesStreamingContent) {
+                this.currentDialogState.examplesStreamingContent = '';
+            }
+            this.currentDialogState.examplesStreamingContent += request.chunk;
+            contentElement = this.currentDialog.querySelector('#examples-streaming-content');
+            streamingContent = this.currentDialogState.examplesStreamingContent;
+            console.log('Updated examples content, total length:', streamingContent.length);
         }
 
         if (contentElement) {
@@ -1380,6 +1530,8 @@ class TextExplainer {
             this.currentDialogState.isStreaming = false;
         } else if (request.type === 'grammar') {
             contentElement = this.currentDialog.querySelector('#grammar-streaming-content');
+        } else if (request.type === 'examples') {
+            contentElement = this.currentDialog.querySelector('#examples-streaming-content');
         }
 
         if (contentElement) {
@@ -1393,6 +1545,11 @@ class TextExplainer {
                 const parsedContent = this.parseStreamingContent(request.result, false, request.type);
                 contentElement.innerHTML = parsedContent;
                 this.currentDialogState.grammarStreamingContent = request.result;
+            } else if (request.type === 'examples') {
+                // Display final examples with consistent formatting
+                const parsedContent = this.parseStreamingContent(request.result, false, request.type);
+                contentElement.innerHTML = parsedContent;
+                this.currentDialogState.examplesStreamingContent = request.result;
             }
         }
     }
@@ -1408,12 +1565,18 @@ class TextExplainer {
             contentElement = this.currentDialog.querySelector('#streaming-content');
         } else if (request.type === 'grammar') {
             contentElement = this.currentDialog.querySelector('#grammar-streaming-content');
+        } else if (request.type === 'examples') {
+            contentElement = this.currentDialog.querySelector('#examples-streaming-content');
         }
 
         if (contentElement) {
             contentElement.innerHTML = `<div class="error-content">
                 <div class="error-message">Failed to ${
-                    request.type === 'explain' ? 'get explanation' : 'analyze grammar'
+                    request.type === 'explain'
+                        ? 'get explanation'
+                        : request.type === 'grammar'
+                        ? 'analyze grammar'
+                        : 'generate examples'
                 }</div>
                 <div class="error-hint">${request.error}</div>
             </div>`;
@@ -1427,6 +1590,12 @@ class TextExplainer {
         // Handle grammar analysis content
         if (type === 'grammar') {
             // Grammar analysis content should be parsed as markdown
+            return this.parseMarkdown(content);
+        }
+
+        // Handle examples content
+        if (type === 'examples') {
+            // Examples content should be parsed as markdown
             return this.parseMarkdown(content);
         }
 

@@ -184,6 +184,51 @@ Instructions:
 Provide a clear grammatical breakdown with labeled components and explanations.`;
     }
 
+    buildExamplesPrompt(selectedText, context, settings) {
+        // Example sentences should be in the learning language (detected from selected text)
+        const detectedLanguage = this.detectTextLanguage(selectedText);
+        const exampleLanguage = detectedLanguage || 'English';
+
+        // Explanations should be in the user's interface language
+        const explanationLanguage = settings.language || 'English';
+
+        return `You are a language expert. Provide practical examples showing how the word or phrase is used in different contexts.
+
+Selected text: "${selectedText}"
+
+Context: "${context}"
+
+CRITICAL INSTRUCTIONS:
+1. Example sentences must be in ${exampleLanguage} (the learning language)
+2. In each example sentence, put the word/phrase "${selectedText}" in **bold markdown** (use **word**)
+3. Explanations must be in ${explanationLanguage} (the user's native language)
+
+Guidelines:
+1. Provide 4-6 practical examples of how this word/phrase is used
+2. Show different meanings or contexts if applicable
+3. Include both formal and informal usage examples
+4. Make examples relevant and easy to understand
+5. Each example should be a complete sentence in ${exampleLanguage}
+6. Brief explanations should be in ${explanationLanguage}
+7. Show variety in sentence structure and complexity
+
+Format your response as:
+**Examples:**
+
+1. [Example sentence 1 in ${exampleLanguage} with **${selectedText}** highlighted] - [Brief explanation in ${explanationLanguage}]
+2. [Example sentence 2 in ${exampleLanguage} with **${selectedText}** highlighted] - [Brief explanation in ${explanationLanguage}]
+3. [Example sentence 3 in ${exampleLanguage} with **${selectedText}** highlighted] - [Brief explanation in ${explanationLanguage}]
+4. [Example sentence 4 in ${exampleLanguage} with **${selectedText}** highlighted] - [Brief explanation in ${explanationLanguage}]
+5. [Example sentence 5 in ${exampleLanguage} with **${selectedText}** highlighted] - [Brief explanation in ${explanationLanguage}]
+
+**Usage Notes:** [Brief notes about common usage patterns in ${explanationLanguage}]
+
+IMPORTANT:
+- Example sentences: ${exampleLanguage}
+- Explanations: ${explanationLanguage}
+- Always highlight "${selectedText}" with **bold** in examples`;
+    }
+
     async analyzeGrammar(selectedText, context, settings) {
         const provider = settings.provider || 'openai';
         const model = settings.model || this.providers[provider].models[0];
@@ -194,6 +239,31 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
         }
 
         const prompt = this.buildGrammarAnalysisPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAI(prompt, model, apiKey);
+            case 'anthropic':
+                return await this.callAnthropic(prompt, model, apiKey);
+            case 'gemini':
+                return await this.callGemini(prompt, model, apiKey);
+            case 'xai':
+                return await this.callXAI(prompt, model, apiKey);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
+    async generateExamples(selectedText, context, settings) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildExamplesPrompt(selectedText, context, settings);
 
         switch (provider) {
             case 'openai':
@@ -260,6 +330,31 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
         }
     }
 
+    async generateExamplesStream(selectedText, context, settings, onChunk) {
+        const provider = settings.provider || 'openai';
+        const model = settings.model || this.providers[provider].models[0];
+        const apiKey = settings.apiKeys && settings.apiKeys[provider];
+
+        if (!apiKey) {
+            throw new Error('API key not found for ' + provider + '. Please configure it in settings.');
+        }
+
+        const prompt = this.buildExamplesPrompt(selectedText, context, settings);
+
+        switch (provider) {
+            case 'openai':
+                return await this.callOpenAIStream(prompt, model, apiKey, onChunk);
+            case 'anthropic':
+                return await this.simulateStreamingResponse(await this.callAnthropic(prompt, model, apiKey), onChunk);
+            case 'gemini':
+                return await this.simulateStreamingResponse(await this.callGemini(prompt, model, apiKey), onChunk);
+            case 'xai':
+                return await this.simulateStreamingResponse(await this.callXAI(prompt, model, apiKey), onChunk);
+            default:
+                throw new Error('Unsupported provider: ' + provider);
+        }
+    }
+
     async simulateStreamingResponse(fullResponse, onChunk) {
         // Simulate streaming for providers that don't support it
         console.log('Simulating streaming for response length:', fullResponse.length);
@@ -278,6 +373,86 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
 
         console.log('Streaming simulation complete');
         return fullResponse;
+    }
+
+    detectTextLanguage(text) {
+        const trimmed = text.trim();
+
+        // Check for common language patterns
+        // Chinese/Japanese/Korean characters
+        if (/[\u4e00-\u9faf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(trimmed)) {
+            if (/[\u4e00-\u9faf]/.test(trimmed)) return 'Chinese';
+            if (/[\u3040-\u309f\u30a0-\u30ff]/.test(trimmed)) return 'Japanese';
+            if (/[\uac00-\ud7af]/.test(trimmed)) return 'Korean';
+        }
+
+        // Arabic script
+        if (/[\u0600-\u06ff]/.test(trimmed)) return 'Arabic';
+
+        // Cyrillic script (Russian, etc.)
+        if (/[\u0400-\u04ff]/.test(trimmed)) return 'Russian';
+
+        // Greek script
+        if (/[\u0370-\u03ff]/.test(trimmed)) return 'Greek';
+
+        // Hebrew script
+        if (/[\u0590-\u05ff]/.test(trimmed)) return 'Hebrew';
+
+        // Thai script
+        if (/[\u0e00-\u0e7f]/.test(trimmed)) return 'Thai';
+
+        // For Latin scripts, check for common non-English patterns
+        // Spanish indicators
+        if (
+            /[ñáéíóúü]/.test(trimmed.toLowerCase()) ||
+            /\b(el|la|los|las|un|una|de|del|en|con|por|para|que|es|está|son|están|no|sí|muy|más|todo|todos|como)\b/.test(
+                trimmed.toLowerCase()
+            )
+        ) {
+            return 'Spanish';
+        }
+
+        // French indicators
+        if (
+            /[àâäéèêëïîôöùûüÿç]/.test(trimmed.toLowerCase()) ||
+            /\b(le|la|les|un|une|de|du|des|et|ou|est|sont|dans|avec|pour|par|sur|ce|cette|ces|qui|que|dont|où)\b/.test(
+                trimmed.toLowerCase()
+            )
+        ) {
+            return 'French';
+        }
+
+        // German indicators
+        if (
+            /[äöüß]/.test(trimmed.toLowerCase()) ||
+            /\b(der|die|das|ein|eine|und|oder|ist|sind|in|mit|für|von|zu|auf|an|bei|nach|über|unter|durch|zwischen)\b/.test(
+                trimmed.toLowerCase()
+            )
+        ) {
+            return 'German';
+        }
+
+        // Italian indicators
+        if (
+            /\b(il|la|lo|gli|le|un|una|di|da|in|con|su|per|tra|fra|che|chi|cui|dove|quando|come|perché|è|sono|ha|hanno|non|più|molto|tutto|tutti)\b/.test(
+                trimmed.toLowerCase()
+            )
+        ) {
+            return 'Italian';
+        }
+
+        // Portuguese indicators
+        if (
+            /[ãõç]/.test(trimmed.toLowerCase()) ||
+            /\b(o|a|os|as|um|uma|de|da|do|das|dos|em|com|por|para|que|é|são|não|mais|muito|todo|todos|como)\b/.test(
+                trimmed.toLowerCase()
+            )
+        ) {
+            return 'Portuguese';
+        }
+
+        // Default to English for Latin script text
+        return 'English';
     }
 
     isSentence(text) {
@@ -328,8 +503,27 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error('OpenAI API error: ' + ((error.error && error.error.message) || 'Unknown error'));
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+            try {
+                const error = await response.json();
+                if (error.error && error.error.message) {
+                    errorMessage = error.error.message;
+
+                    // Provide more specific error messages for common issues
+                    if (error.error.code === 'invalid_api_key') {
+                        errorMessage = 'Invalid API key. Please check your OpenAI API key.';
+                    } else if (error.error.code === 'insufficient_quota') {
+                        errorMessage = 'API quota exceeded. Please check your OpenAI billing.';
+                    } else if (error.error.code === 'model_not_found') {
+                        errorMessage = `Model "${model}" not found. Please select a valid model.`;
+                    }
+                }
+            } catch (e) {
+                // If we can't parse the error response, use the HTTP status
+            }
+
+            throw new Error('OpenAI API error: ' + errorMessage);
         }
 
         const data = await response.json();
@@ -487,29 +681,39 @@ Provide a clear grammatical breakdown with labeled components and explanations.`
     }
 
     async testApiKey(provider, apiKey, model) {
-        try {
-            const testPrompt = 'Test connection';
+        if (!apiKey || apiKey.trim() === '') {
+            throw new Error('Please enter an API key first');
+        }
 
+        if (!provider) {
+            throw new Error('Provider not specified');
+        }
+
+        console.log(`Testing ${provider} API key with model: ${model}`);
+        const testPrompt = 'Hello';
+
+        try {
             switch (provider) {
                 case 'openai':
-                    await this.callOpenAI(testPrompt, model, apiKey);
+                    await this.callOpenAI(testPrompt, model || 'gpt-4o-mini', apiKey);
                     break;
                 case 'anthropic':
-                    await this.callAnthropic(testPrompt, model, apiKey);
+                    await this.callAnthropic(testPrompt, model || 'claude-3-5-haiku-20241022', apiKey);
                     break;
                 case 'gemini':
-                    await this.callGemini(testPrompt, model, apiKey);
+                    await this.callGemini(testPrompt, model || 'gemini-1.5-flash', apiKey);
                     break;
                 case 'xai':
-                    await this.callXAI(testPrompt, model, apiKey);
+                    await this.callXAI(testPrompt, model || 'grok-beta', apiKey);
                     break;
                 default:
-                    return false;
+                    throw new Error(`Unsupported provider: ${provider}`);
             }
+            console.log(`${provider} API key test successful`);
             return true;
         } catch (error) {
-            console.error('API key test failed:', error);
-            return false;
+            console.error(`${provider} API key test failed:`, error.message);
+            throw error; // Re-throw to let the caller handle the specific error message
         }
     }
 
@@ -583,9 +787,16 @@ class BackgroundService {
                 // Handle streaming grammar analysis
                 this.handleStreamingRequest(request, sender, 'grammar');
                 sendResponse({ success: true, streaming: true });
+            } else if (request.action === 'generate-examples') {
+                const examples = await this.aiService.generateExamples(request.text, request.context, request.settings);
+                sendResponse({ success: true, examples });
+            } else if (request.action === 'generate-examples-stream') {
+                // Handle streaming examples generation
+                this.handleStreamingRequest(request, sender, 'examples');
+                sendResponse({ success: true, streaming: true });
             } else if (request.action === 'test-api-key') {
-                const result = await this.aiService.testApiKey(request.provider, request.apiKey, request.model);
-                sendResponse({ success: true, result });
+                const isValid = await this.aiService.testApiKey(request.provider, request.apiKey, request.model);
+                sendResponse({ success: true, isValid });
             } else if (request.action === 'get-providers') {
                 const providers = this.aiService.getAvailableProviders();
                 sendResponse({ success: true, providers });
@@ -636,6 +847,15 @@ class BackgroundService {
                     onChunk
                 );
                 console.log('Grammar analysis stream completed, result length:', result.length);
+            } else if (type === 'examples') {
+                console.log('Starting examples generation stream');
+                result = await this.aiService.generateExamplesStream(
+                    request.text,
+                    request.context,
+                    request.settings,
+                    onChunk
+                );
+                console.log('Examples generation stream completed, result length:', result.length);
             }
 
             // Send completion message

@@ -54,7 +54,7 @@ class SettingsManager {
         // Provider dropdown
         const providerSelect = document.getElementById('provider-select');
         if (providerSelect) {
-            providerSelect.addEventListener('change', (e) => {
+            providerSelect.addEventListener('change', e => {
                 this.settings.provider = e.target.value;
                 this.updateModelOptions();
                 this.updateApiKeySection();
@@ -65,7 +65,7 @@ class SettingsManager {
         // Model dropdown
         const modelSelect = document.getElementById('model-select');
         if (modelSelect) {
-            modelSelect.addEventListener('change', (e) => {
+            modelSelect.addEventListener('change', e => {
                 this.settings.model = e.target.value;
                 this.saveSettings();
             });
@@ -138,7 +138,7 @@ class SettingsManager {
         providers.forEach(provider => {
             const input = document.getElementById(provider + '-key');
             if (input) {
-                input.addEventListener('input', (e) => {
+                input.addEventListener('input', e => {
                     if (!this.settings.apiKeys) {
                         this.settings.apiKeys = {};
                     }
@@ -156,7 +156,7 @@ class SettingsManager {
         // Detail level
         const detailLevel = document.getElementById('detail-level');
         if (detailLevel) {
-            detailLevel.addEventListener('change', (e) => {
+            detailLevel.addEventListener('change', e => {
                 this.settings.detailLevel = e.target.value;
                 this.saveSettings();
             });
@@ -165,7 +165,7 @@ class SettingsManager {
         // Language
         const language = document.getElementById('language-select');
         if (language) {
-            language.addEventListener('change', (e) => {
+            language.addEventListener('change', e => {
                 this.settings.language = e.target.value;
                 this.saveSettings();
             });
@@ -174,7 +174,7 @@ class SettingsManager {
         // Theme
         const theme = document.getElementById('theme-select');
         if (theme) {
-            theme.addEventListener('change', (e) => {
+            theme.addEventListener('change', e => {
                 this.settings.theme = e.target.value;
                 this.applyTheme(e.target.value);
                 this.saveSettings();
@@ -184,7 +184,7 @@ class SettingsManager {
         // Context length
         const contextLength = document.getElementById('context-length');
         if (contextLength) {
-            contextLength.addEventListener('input', (e) => {
+            contextLength.addEventListener('input', e => {
                 this.settings.contextLength = parseInt(e.target.value);
                 this.updateContextLengthDisplay();
             });
@@ -197,7 +197,7 @@ class SettingsManager {
         // Response length
         const responseLength = document.getElementById('response-length');
         if (responseLength) {
-            responseLength.addEventListener('input', (e) => {
+            responseLength.addEventListener('input', e => {
                 this.settings.responseLength = parseInt(e.target.value);
                 this.updateResponseLengthDisplay();
             });
@@ -246,26 +246,50 @@ class SettingsManager {
             anthropic: [
                 { id: 'claude-opus-4-20250514', name: 'Claude Opus 4 ($15/$75 per 1M tokens) - Most capable' },
                 { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 ($3/$15 per 1M tokens) - High performance' },
-                { id: 'claude-3-7-sonnet-20250219', name: 'Claude Sonnet 3.7 ($3/$15 per 1M tokens) - Extended thinking' },
+                {
+                    id: 'claude-3-7-sonnet-20250219',
+                    name: 'Claude Sonnet 3.7 ($3/$15 per 1M tokens) - Extended thinking'
+                },
                 { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet ($3/$15 per 1M tokens) - Balanced' },
                 { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku ($0.80/$4 per 1M tokens) - Fastest' },
                 { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus ($15/$75 per 1M tokens) - Legacy powerful' },
                 { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku ($0.25/$1.25 per 1M tokens) - Most economical' }
             ],
             gemini: [
-                { id: 'gemini-2.5-flash-preview', name: 'Gemini 2.5 Flash ($0.15/$0.60 per 1M tokens) - Latest hybrid reasoning' },
-                { id: 'gemini-2.5-pro-preview', name: 'Gemini 2.5 Pro ($1.25/$10 per 1M tokens) - Most advanced thinking' },
-                { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash ($0.10/$0.40 per 1M tokens) - Multimodal agent-ready' },
-                { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite ($0.075/$0.30 per 1M tokens) - Cost efficient' },
+                {
+                    id: 'gemini-2.5-flash-preview',
+                    name: 'Gemini 2.5 Flash ($0.15/$0.60 per 1M tokens) - Latest hybrid reasoning'
+                },
+                {
+                    id: 'gemini-2.5-pro-preview',
+                    name: 'Gemini 2.5 Pro ($1.25/$10 per 1M tokens) - Most advanced thinking'
+                },
+                {
+                    id: 'gemini-2.0-flash',
+                    name: 'Gemini 2.0 Flash ($0.10/$0.40 per 1M tokens) - Multimodal agent-ready'
+                },
+                {
+                    id: 'gemini-2.0-flash-lite',
+                    name: 'Gemini 2.0 Flash-Lite ($0.075/$0.30 per 1M tokens) - Cost efficient'
+                },
                 { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro ($1.25/$5 per 1M tokens) - Large context' },
                 { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash ($0.075/$0.30 per 1M tokens) - Fast & versatile' },
-                { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B ($0.0375/$0.15 per 1M tokens) - Most economical' }
+                {
+                    id: 'gemini-1.5-flash-8b',
+                    name: 'Gemini 1.5 Flash-8B ($0.0375/$0.15 per 1M tokens) - Most economical'
+                }
             ],
             xai: [
                 { id: 'grok-3-beta', name: 'Grok 3 Beta (Pricing TBA) - Most advanced with Think mode & 1M context' },
                 { id: 'grok-3-fast-beta', name: 'Grok 3 Fast Beta ($5/$25 per 1M tokens) - Fast response version' },
-                { id: 'grok-3-mini-beta', name: 'Grok 3 Mini Beta ($0.30/$0.50 per 1M tokens) - Cost-efficient reasoning' },
-                { id: 'grok-3-mini-fast-beta', name: 'Grok 3 Mini Fast Beta ($0.60/$4 per 1M tokens) - Fast mini version' },
+                {
+                    id: 'grok-3-mini-beta',
+                    name: 'Grok 3 Mini Beta ($0.30/$0.50 per 1M tokens) - Cost-efficient reasoning'
+                },
+                {
+                    id: 'grok-3-mini-fast-beta',
+                    name: 'Grok 3 Mini Fast Beta ($0.60/$4 per 1M tokens) - Fast mini version'
+                },
                 { id: 'grok-beta', name: 'Grok Beta ($5/$15 per 1M tokens) - Comparable to Grok 2 with efficiency' },
                 { id: 'grok-vision-beta', name: 'Grok Vision Beta (Pricing TBA) - Vision capabilities for images' },
                 { id: 'grok-vision-2', name: 'Grok Vision 2 (Pricing TBA) - Enhanced vision processing' },
@@ -376,7 +400,12 @@ class SettingsManager {
                 testBtn.textContent = '✅ Success';
                 testBtn.className = 'btn btn-outline success';
             } else {
-                this.showMessage(`❌ ${provider.toUpperCase()} API test failed. Please check your API key.`, 'error');
+                // Check if there's a specific error message in the response
+                let errorMessage = `❌ ${provider.toUpperCase()} API test failed. Please check your API key.`;
+                if (response && response.error) {
+                    errorMessage = `❌ ${provider.toUpperCase()} API error: ${response.error}`;
+                }
+                this.showMessage(errorMessage, 'error');
                 testBtn.textContent = '❌ Failed';
                 testBtn.className = 'btn btn-outline danger';
             }
@@ -410,7 +439,11 @@ class SettingsManager {
     }
 
     clearAllData() {
-        if (confirm('Are you sure you want to clear all extension data? This will remove all settings and API keys permanently.')) {
+        if (
+            confirm(
+                'Are you sure you want to clear all extension data? This will remove all settings and API keys permanently.'
+            )
+        ) {
             chrome.storage.local.clear(() => {
                 this.showMessage('All extension data cleared', 'success');
                 // Reset to defaults
